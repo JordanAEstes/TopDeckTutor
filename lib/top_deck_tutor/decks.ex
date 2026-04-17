@@ -57,7 +57,11 @@ defmodule TopDeckTutor.Decks do
 
   def add_card(%Deck{id: deck_id}, %Card{id: card_id}, attrs \\ %{}) do
     section = Map.get(attrs, "section") || Map.get(attrs, :section) || "mainboard"
-    quantity = Map.get(attrs, "quantity") || Map.get(attrs, :quantity) || 1
+
+    quantity =
+      attrs
+      |> Map.get("quantity", Map.get(attrs, :quantity, 1))
+      |> normalize_quantity()
 
     case Repo.get_by(DeckEntry, deck_id: deck_id, card_id: card_id, section: section) do
       nil ->
@@ -98,4 +102,8 @@ defmodule TopDeckTutor.Decks do
     |> list_entries()
     |> Enum.group_by(& &1.section)
   end
+
+  defp normalize_quantity(quantity) when is_integer(quantity), do: quantity
+  defp normalize_quantity(quantity) when is_binary(quantity), do: String.to_integer(quantity)
+  defp normalize_quantity(_), do: 1
 end
