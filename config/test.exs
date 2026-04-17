@@ -9,8 +9,8 @@ config :bcrypt_elixir, :log_rounds, 1
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :top_deck_tutor, TopDeckTutor.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: System.get_env("USER"),
+  password: nil,
   hostname: "localhost",
   database: "top_deck_tutor_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
