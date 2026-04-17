@@ -27,7 +27,7 @@ defmodule TopDeckTutor.Decks do
 
   def create_deck(%User{id: user_id}, attrs) do
     %Deck{}
-    |> Deck.changeset(Map.put(attrs, "user_id", user_id))
+    |> Deck.changeset(Map.put(attrs, :user_id, user_id))
     |> Repo.insert()
   end
 

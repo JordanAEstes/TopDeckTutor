@@ -2,14 +2,12 @@ defmodule TopDeckTutor.Decks.DeckEntry do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @foreign_key_type :binary_id
-
   schema "deck_entries" do
     field :quantity, :integer, default: 1
     field :section, :string, default: "mainboard"
 
     belongs_to :deck, TopDeckTutor.Decks.Deck
-    belongs_to :card, TopDeckTutor.Cards.Card
+    belongs_to :card, TopDeckTutor.Cards.Card, type: :binary_id
 
     timestamps()
   end
