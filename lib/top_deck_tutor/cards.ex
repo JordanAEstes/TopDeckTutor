@@ -61,7 +61,8 @@ defmodule TopDeckTutor.Cards do
     |> Card.changeset(attrs)
     |> Repo.insert(
       on_conflict: {:replace_all_except, [:id, :inserted_at]},
-      conflict_target: :id
+      conflict_target: :id,
+      returning: true
     )
   end
 
