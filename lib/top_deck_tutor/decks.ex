@@ -55,6 +55,12 @@ defmodule TopDeckTutor.Decks do
 
   def get_entry!(id), do: Repo.get!(DeckEntry, id)
 
+  def get_deck_entry!(%Deck{id: deck_id}, entry_id) do
+    DeckEntry
+    |> where([de], de.id == ^entry_id and de.deck_id == ^deck_id)
+    |> Repo.one!()
+  end
+
   def add_card(%Deck{id: deck_id}, %Card{id: card_id}, attrs \\ %{}) do
     section = Map.get(attrs, "section") || Map.get(attrs, :section) || "mainboard"
 
