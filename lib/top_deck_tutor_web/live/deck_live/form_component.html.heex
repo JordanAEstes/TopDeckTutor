@@ -1,0 +1,26 @@
+<div id={"deck-form-component-#{@id}"}>
+  <.form
+    for={@form}
+    id="deck-form"
+    phx-target={@myself}
+    phx-change="validate"
+    phx-submit="save"
+    class="space-y-6"
+  >
+    <.input field={@form[:name]} type="text" label="Name" />
+    <.input field={@form[:format]} type="text" label="Format" />
+
+    <.input
+      field={@form[:visibility]}
+      type="select"
+      label="Visibility"
+      options={[{"Private", "private"}, {"Unlisted", "unlisted"}, {"Public", "public"}]}
+    />
+
+    <.input field={@form[:description]} type="textarea" label="Description" />
+
+    <div class="flex justify-end">
+      <.button>Save deck</.button>
+    </div>
+  </.form>
+</div>

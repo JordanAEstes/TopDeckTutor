@@ -88,7 +88,8 @@ defmodule TopDeckTutor.Cards.NormalizerTest do
             "name" => "Jinnie Fay, Jetmir's Second",
             "mana_cost" => "{R}{G}{W}",
             "type_line" => "Legendary Creature - Elf Druid",
-            "oracle_text" => "If you would create one or more tokens, you may instead create that many 2/2 green Cat creature tokens with haste.",
+            "oracle_text" =>
+              "If you would create one or more tokens, you may instead create that many 2/2 green Cat creature tokens with haste.",
             "colors" => ["G", "R", "W"],
             "power" => "3",
             "toughness" => "3",

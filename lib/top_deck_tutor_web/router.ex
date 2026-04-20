@@ -54,6 +54,11 @@ defmodule TopDeckTutorWeb.Router do
       on_mount: [{TopDeckTutorWeb.UserAuth, :require_authenticated}] do
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
+      live "/decks", DeckLive.Index, :index
+      live "/decks/new", DeckLive.Index, :new
+      live "/decks/:id/edit", DeckLive.Index, :edit
+      live "/decks/:id", DeckLive.Show, :show
+      live "/decks/:id/show/edit", DeckLive.Show, :edit
     end
 
     post "/users/update-password", UserSessionController, :update_password
