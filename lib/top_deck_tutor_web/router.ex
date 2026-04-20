@@ -59,6 +59,7 @@ defmodule TopDeckTutorWeb.Router do
       live "/decks/:id/edit", DeckLive.Index, :edit
       live "/decks/:id", DeckLive.Show, :show
       live "/decks/:id/show/edit", DeckLive.Show, :edit
+      live "/decks/:id/search", DeckLive.Search, :show
     end
 
     post "/users/update-password", UserSessionController, :update_password
