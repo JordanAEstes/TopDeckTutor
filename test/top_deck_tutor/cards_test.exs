@@ -28,6 +28,7 @@ defmodule TopDeckTutor.CardsTest do
     test "matches by normalized name" do
       card =
         card_fixture(%{name: "Atraxa, Grand Unifier", normalized_name: "atraxa grand unifier"})
+
       card_id = card.id
 
       assert %Card{id: ^card_id} = Cards.get_card_by_name("Atraxa, Grand Unifier")
