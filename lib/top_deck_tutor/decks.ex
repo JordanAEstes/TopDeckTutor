@@ -85,6 +85,37 @@ defmodule TopDeckTutor.Decks do
     end
   end
 
+  def search_cards_in_deck(%Deck{id: deck_id}, term) when is_binary(term) do
+    trimmed = String.trim(term)
+
+    base_query =
+      from c in Card,
+        join: de in DeckEntry,
+        on: de.card_id == c.id,
+        where: de.deck_id == ^deck_id,
+        select: %{card: c, quantity: de.quantity, section: de.section}
+
+    case trimmed do
+      "" ->
+        base_query
+        |> order_by([c, de], asc: de.section, asc: c.name)
+        |> Repo.all()
+
+      _ ->
+        pattern = "%#{trimmed}%"
+
+        base_query
+        |> where(
+          [c, de],
+          ilike(c.name, ^pattern) or
+            ilike(c.type_line, ^pattern) or
+            ilike(c.oracle_text, ^pattern)
+        )
+        |> order_by([c, de], asc: de.section, asc: c.name)
+        |> Repo.all()
+    end
+  end
+
   def update_entry(%DeckEntry{} = entry, attrs) do
     entry
     |> DeckEntry.changeset(attrs)
