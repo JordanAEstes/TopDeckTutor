@@ -116,17 +116,18 @@ defmodule TopDeckTutor.Decks do
     end
   end
 
-  def search_ast_in_deck(%Deck{id: deck_id}, ast) when is_list(ast) do
-    base_query =
-      from c in Card,
-        join: de in DeckEntry,
-        on: de.card_id == c.id,
-        where: de.deck_id == ^deck_id,
-        order_by: [asc: de.section, asc: c.name],
-        select: %{card: c, quantity: de.quantity, section: de.section}
+  def deck_search_scope(%Deck{id: deck_id}) do
+    from c in Card,
+      join: de in DeckEntry,
+      on: de.card_id == c.id,
+      where: de.deck_id == ^deck_id,
+      order_by: [asc: de.section, asc: c.name],
+      select: %{card: c, quantity: de.quantity, section: de.section}
+  end
 
-    # compile against the card binding, then keep the same select
-    TopDeckTutor.Search.Compiler.compile(ast, base_query)
+  def search_ast_in_deck(%Deck{} = deck, ast) when is_list(ast) do
+    ast
+    |> TopDeckTutor.Search.Compiler.compile(deck_search_scope(deck))
     |> Repo.all()
   end
 

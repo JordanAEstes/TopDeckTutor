@@ -85,6 +85,25 @@ defmodule TopDeckTutor.CardsTest do
 
       assert Enum.any?(results, &(&1.id == matching.id))
     end
+
+    test "search_query/1 supports name and text filters" do
+      matching =
+        card_fixture(%{
+          name: "Divination",
+          normalized_name: "divination",
+          oracle_text: "Draw two cards."
+        })
+
+      _other =
+        card_fixture(%{
+          name: "Shock",
+          normalized_name: "shock",
+          oracle_text: "Shock deals 2 damage to any target."
+        })
+
+      assert {:ok, results} = Cards.search_query(~s(name:divination text:"Draw two"))
+      assert Enum.any?(results, &(&1.id == matching.id))
+    end
   end
 
   describe "create_card/1" do

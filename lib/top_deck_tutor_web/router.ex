@@ -22,6 +22,7 @@ defmodule TopDeckTutorWeb.Router do
 
     get "/", PageController, :home
     live "/search", SearchLive, :index
+    live "/syntax", SyntaxGuideLive, :index
   end
 
   # Other scopes may use custom stacks.

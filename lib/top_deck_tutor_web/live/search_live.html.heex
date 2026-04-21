@@ -27,6 +27,15 @@
       </.form>
     </section>
 
+    <%= if @parse_error do %>
+      <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        {@parse_error}
+      </div>
+    <% end %>
+    <%= if @ast != [] do %>
+      <pre class="overflow-x-auto rounded-md bg-zinc-100 p-3 text-xs text-zinc-700"><%= inspect(@ast, pretty: true) %></pre>
+    <% end %>
+
     <section class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-medium">Results</h2>

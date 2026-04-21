@@ -22,4 +22,9 @@ defmodule TopDeckTutor.Search.TokenizerTest do
     assert {:ok, ["draw a card"]} =
              TopDeckTutor.Search.Tokenizer.tokenize(~s("draw a card"))
   end
+
+  test "keeps field-prefixed quoted values together" do
+    assert {:ok, ["name:divination", ~s(text:"Draw two")]} =
+             TopDeckTutor.Search.Tokenizer.tokenize(~s(name:divination text:"Draw two"))
+  end
 end

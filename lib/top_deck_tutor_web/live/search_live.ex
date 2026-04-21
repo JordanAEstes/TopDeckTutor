@@ -2,6 +2,7 @@ defmodule TopDeckTutorWeb.SearchLive do
   use TopDeckTutorWeb, :live_view
 
   alias TopDeckTutor.Cards
+  alias TopDeckTutor.Search
 
   @impl true
   def mount(_params, _session, socket) do
@@ -9,24 +10,49 @@ defmodule TopDeckTutorWeb.SearchLive do
      assign(socket,
        page_title: "Search",
        query: "",
-       results: []
+       results: [],
+       ast: [],
+       parse_error: nil
      )}
   end
 
   @impl true
   def handle_params(params, _url, socket) do
-    query = Map.get(params, "q", "") |> String.trim()
+    query =
+      params
+      |> Map.get("q", "")
+      |> String.trim()
 
-    results =
-      case query do
-        "" -> []
-        q -> Cards.search_cards(q)
-      end
+    case query do
+      "" ->
+        {:noreply,
+         socket
+         |> assign(:query, "")
+         |> assign(:results, [])
+         |> assign(:ast, [])
+         |> assign(:parse_error, nil)}
 
-    {:noreply,
-     socket
-     |> assign(:query, query)
-     |> assign(:results, results)}
+      _ ->
+        case Search.parse(query) do
+          {:ok, ast} ->
+            results = Cards.search_ast(ast)
+
+            {:noreply,
+             socket
+             |> assign(:query, query)
+             |> assign(:results, results)
+             |> assign(:ast, ast)
+             |> assign(:parse_error, nil)}
+
+          {:error, reason} ->
+            {:noreply,
+             socket
+             |> assign(:query, query)
+             |> assign(:results, [])
+             |> assign(:ast, [])
+             |> assign(:parse_error, reason)}
+        end
+    end
   end
 
   @impl true

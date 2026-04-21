@@ -33,4 +33,19 @@ defmodule TopDeckTutor.Search.ParserTest do
     assert {:ok, [{:cmp, :mana_value, :>, value}]} = Parser.parse(["mv>5"])
     assert Decimal.equal?(value, Decimal.new("5"))
   end
+
+  test "parses name contains filter" do
+    assert {:ok, [{:field_contains, :name, "sol"}]} =
+             Parser.parse(["name:sol"])
+  end
+
+  test "parses text contains filter" do
+    assert {:ok, [{:field_contains, :oracle_text, "draw"}]} =
+             Parser.parse(["text:draw"])
+  end
+
+  test "parses quoted text field filter" do
+    assert {:ok, [{:field_contains, :oracle_text, "Draw two"}]} =
+             Parser.parse([~s(text:"Draw two")])
+  end
 end
