@@ -23,6 +23,16 @@ defmodule TopDeckTutor.Search.Compiler do
     where(query, [c], ilike(c.type_line, ^pattern))
   end
 
+  defp apply_node({:field_contains, :name, value}, query) do
+    pattern = "%#{value}%"
+    where(query, [c], ilike(c.name, ^pattern))
+  end
+
+  defp apply_node({:field_contains, :oracle_text, value}, query) do
+    pattern = "%#{value}%"
+    where(query, [c], ilike(c.oracle_text, ^pattern))
+  end
+
   defp apply_node({:cmp, :mana_value, :<=, value}, query) do
     where(query, [c], c.mana_value <= ^value)
   end

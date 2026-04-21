@@ -15,6 +15,12 @@ defmodule TopDeckTutor.Search.Parser do
 
   defp parse_token(token) when is_binary(token) do
     cond do
+      String.starts_with?(token, "name:") ->
+        parse_contains_field(token, "name:", :name)
+
+      String.starts_with?(token, "text:") ->
+        parse_contains_field(token, "text:", :oracle_text)
+
       String.starts_with?(token, "type:") ->
         parse_type(token)
 
@@ -26,6 +32,30 @@ defmodule TopDeckTutor.Search.Parser do
 
       true ->
         {:ok, {:text, token}}
+    end
+  end
+
+  defp parse_contains_field(token, prefix, field) do
+    value =
+      token
+      |> String.replace_prefix(prefix, "")
+      |> String.trim()
+      |> strip_wrapping_quotes()
+
+    if value == "" do
+      {:error, "Missing value for #{prefix}"}
+    else
+      {:ok, {:field_contains, field, value}}
+    end
+  end
+
+  defp strip_wrapping_quotes(value) do
+    case value do
+      <<?", rest::binary>> ->
+        String.trim_trailing(rest, "\"")
+
+      other ->
+        other
     end
   end
 

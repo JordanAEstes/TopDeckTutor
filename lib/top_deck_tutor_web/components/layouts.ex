@@ -44,6 +44,10 @@ defmodule TopDeckTutorWeb.Layouts do
                 Global Search
               </.link>
 
+              <.link navigate={~p"/syntax"} class="hover:text-zinc-900 hover:underline">
+                Syntax Guide
+              </.link>
+
               <%= if @current_scope do %>
                 <.link navigate={~p"/decks"} class="hover:text-zinc-900 hover:underline">
                   My Decks
