@@ -91,6 +91,8 @@ defmodule TopDeckTutorWeb.Layouts do
         </div>
       </header>
 
+      <.flash_group flash={@flash} />
+
       <main class="flex-1">
         {render_slot(@inner_block)}
       </main>

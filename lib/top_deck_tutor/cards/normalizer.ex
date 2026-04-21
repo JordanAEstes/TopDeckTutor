@@ -4,7 +4,7 @@ defmodule TopDeckTutor.Cards.Normalizer do
   def from_scryfall(card) when is_map(card) do
     primary_face = primary_face(card)
     type_line = card_field(card, primary_face, "type_line", "")
-    name = card_field(card, primary_face, "name")
+    name = card_name(card, primary_face)
 
     %{
       id: card["id"],
@@ -94,6 +94,19 @@ defmodule TopDeckTutor.Cards.Normalizer do
     case Map.get(card, "card_faces") do
       [face | _] when is_map(face) -> face
       _ -> %{}
+    end
+  end
+
+  defp card_name(card, face) do
+    case {Map.get(card, "name"), Map.get(face, "name")} do
+      {name, face_name} when is_binary(name) and is_binary(face_name) ->
+        if String.contains?(name, " // "), do: face_name, else: name
+
+      {nil, face_name} ->
+        face_name
+
+      {name, _face_name} ->
+        name
     end
   end
 
