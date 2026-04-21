@@ -21,6 +21,7 @@ defmodule TopDeckTutorWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/search", SearchLive, :index
   end
 
   # Other scopes may use custom stacks.

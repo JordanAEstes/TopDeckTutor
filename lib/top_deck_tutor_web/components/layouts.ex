@@ -25,50 +25,82 @@ defmodule TopDeckTutorWeb.Layouts do
       </Layouts.app>
 
   """
-  attr :flash, :map, required: true, doc: "the map of flash messages"
-
-  attr :current_scope, :map,
-    default: nil,
-    doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
-
+  attr :flash, :map, required: true
+  attr :current_scope, :any, default: nil
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-    </header>
+    <div class="min-h-screen flex flex-col bg-white text-zinc-900">
+      <header class="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+          <div class="flex items-center gap-6">
+            <.link navigate={~p"/"} class="text-lg font-semibold tracking-tight">
+              TopDeckTutor
+            </.link>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+            <nav class="hidden md:flex items-center gap-4 text-sm">
+              <.link navigate={~p"/search"} class="hover:text-zinc-900 hover:underline">
+                Global Search
+              </.link>
+
+              <%= if @current_scope do %>
+                <.link navigate={~p"/decks"} class="hover:text-zinc-900 hover:underline">
+                  My Decks
+                </.link>
+              <% end %>
+            </nav>
+          </div>
+
+          <div class="flex items-center gap-3 text-sm">
+            <%= if @current_scope do %>
+              <span class="hidden sm:inline text-zinc-500">
+                {@current_scope.user.email}
+              </span>
+
+              <.link
+                navigate={~p"/users/settings"}
+                class="hover:text-zinc-900 hover:underline"
+              >
+                Settings
+              </.link>
+
+              <.link
+                href={~p"/users/log_out"}
+                method="delete"
+                class="rounded-md border px-3 py-2 font-medium transition hover:bg-zinc-50"
+              >
+                Log out
+              </.link>
+            <% else %>
+              <.link
+                navigate={~p"/users/register"}
+                class="hover:text-zinc-900 hover:underline"
+              >
+                Register
+              </.link>
+
+              <.link
+                navigate={~p"/users/log_in"}
+                class="rounded-md bg-zinc-900 px-3 py-2 font-medium text-white transition hover:bg-zinc-700"
+              >
+                Log in
+              </.link>
+            <% end %>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1">
         {render_slot(@inner_block)}
-      </div>
-    </main>
+      </main>
 
-    <.flash_group flash={@flash} />
+      <footer class="border-t bg-zinc-50">
+        <div class="mx-auto max-w-6xl px-4 py-4 text-sm text-zinc-500">
+          TopDeckTutor
+        </div>
+      </footer>
+    </div>
     """
   end
 

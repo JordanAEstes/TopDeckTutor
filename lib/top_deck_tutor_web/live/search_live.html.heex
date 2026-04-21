@@ -1,0 +1,64 @@
+<Layouts.app flash={@flash} current_scope={nil}>
+  <div class="mx-auto max-w-5xl space-y-6 px-4 py-10">
+    <div class="space-y-2">
+      <h1 class="text-3xl font-semibold">Global Search</h1>
+      <p class="text-sm text-zinc-600">
+        Search the full card catalog.
+      </p>
+    </div>
+
+    <section class="rounded-lg border p-4 shadow-sm space-y-4">
+      <.form for={%{}} as={:search} id="global-search-form" phx-change="search" phx-submit="search" class="space-y-3">
+        <.input name="search[q]" value={@query} type="text" label="Search cards"
+          placeholder="Try: Sol Ring, draw, creature, land..." autocomplete="off" />
+      </.form>
+    </section>
+
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-medium">Results</h2>
+        <div class="text-sm text-zinc-500">
+          <%= if @query=="" do %>
+            Enter a search
+            <% else %>
+              {length(@results)} matches
+              <% end %>
+        </div>
+      </div>
+
+      <%= if @query !="" and @results==[] do %>
+        <div class="rounded-lg border border-dashed p-6 text-sm text-zinc-500 shadow-sm">
+          No matching cards found.
+        </div>
+        <% end %>
+
+          <div class="space-y-3">
+            <%= for card <- @results do %>
+              <div class="rounded-lg border p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <div class="font-medium">{card.name}</div>
+
+                    <%= if card.mana_cost not in [nil, "" ] do %>
+                      <div class="text-sm text-zinc-600">{card.mana_cost}</div>
+                      <% end %>
+
+                        <div class="text-sm text-zinc-600">{card.type_line}</div>
+
+                        <%= if card.oracle_text not in [nil, "" ] do %>
+                          <div class="mt-2 whitespace-pre-line text-sm text-zinc-500">
+                            {card.oracle_text}
+                          </div>
+                          <% end %>
+                  </div>
+
+                  <div class="shrink-0 text-sm text-zinc-500">
+                    MV {card.mana_value}
+                  </div>
+                </div>
+              </div>
+              <% end %>
+          </div>
+    </section>
+  </div>
+</Layouts.app>
