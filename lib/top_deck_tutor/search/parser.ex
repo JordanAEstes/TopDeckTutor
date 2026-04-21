@@ -21,7 +21,7 @@ defmodule TopDeckTutor.Search.Parser do
       String.starts_with?(token, "is:") ->
         parse_flag(token)
 
-      Regex.match?(~r/^mv(<=|>=|=)-?\d+(\.\d+)?$/, token) ->
+      Regex.match?(~r/^mv(<=|>=|<|>|=)-?\d+(\.\d+)?$/, token) ->
         parse_mv(token)
 
       true ->
@@ -61,7 +61,7 @@ defmodule TopDeckTutor.Search.Parser do
   end
 
   defp parse_mv(token) do
-    case Regex.run(~r/^mv(<=|>=|=)(-?\d+(\.\d+)?)$/, token) do
+    case Regex.run(~r/^mv(<=|>=|<|>|=)(-?\d+(\.\d+)?)$/, token) do
       [_, op, value, _] ->
         {:ok, {:cmp, :mana_value, to_op(op), Decimal.new(value)}}
 
@@ -75,5 +75,7 @@ defmodule TopDeckTutor.Search.Parser do
 
   defp to_op("<="), do: :<=
   defp to_op(">="), do: :>=
+  defp to_op("<"), do: :<
+  defp to_op(">"), do: :>
   defp to_op("="), do: :==
 end

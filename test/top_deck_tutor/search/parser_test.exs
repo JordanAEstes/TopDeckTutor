@@ -23,4 +23,14 @@ defmodule TopDeckTutor.Search.ParserTest do
   test "errors on unknown flags" do
     assert {:error, "Unknown flag: funny"} = Parser.parse(["is:funny"])
   end
+
+  test "parses mana value less than comparison" do
+    assert {:ok, [{:cmp, :mana_value, :<, value}]} = Parser.parse(["mv<3"])
+    assert Decimal.equal?(value, Decimal.new("3"))
+  end
+
+  test "parses mana value greater than comparison" do
+    assert {:ok, [{:cmp, :mana_value, :>, value}]} = Parser.parse(["mv>5"])
+    assert Decimal.equal?(value, Decimal.new("5"))
+  end
 end

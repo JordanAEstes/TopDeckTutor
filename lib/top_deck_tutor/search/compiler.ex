@@ -35,6 +35,14 @@ defmodule TopDeckTutor.Search.Compiler do
     where(query, [c], c.mana_value == ^value)
   end
 
+  defp apply_node({:cmp, :mana_value, :<, value}, query) do
+    where(query, [c], c.mana_value < ^value)
+  end
+
+  defp apply_node({:cmp, :mana_value, :>, value}, query) do
+    where(query, [c], c.mana_value > ^value)
+  end
+
   defp apply_node({:flag, :legendary}, query) do
     where(query, [c], c.is_legendary == true)
   end
