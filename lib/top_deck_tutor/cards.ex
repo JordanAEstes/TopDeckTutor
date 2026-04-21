@@ -36,6 +36,24 @@ defmodule TopDeckTutor.Cards do
     |> Repo.all()
   end
 
+  def search_scope do
+    from c in Card,
+      order_by: [asc: c.name]
+  end
+
+  def search_ast(ast) when is_list(ast) do
+    ast
+    |> TopDeckTutor.Search.Compiler.compile(search_scope())
+    |> limit(100)
+    |> Repo.all()
+  end
+
+  def search_query(query_string) when is_binary(query_string) do
+    with {:ok, ast} <- TopDeckTutor.Search.parse(query_string) do
+      {:ok, search_ast(ast)}
+    end
+  end
+
   def create_card(attrs \\ %{}) do
     %Card{}
     |> Card.changeset(attrs)

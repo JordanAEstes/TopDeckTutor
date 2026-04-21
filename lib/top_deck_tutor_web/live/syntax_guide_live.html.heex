@@ -1,0 +1,91 @@
+<Layouts.app flash={@flash} current_scope={nil}>
+  <div class="mx-auto max-w-4xl space-y-8 px-4 py-10">
+    <div class="space-y-2">
+      <h1 class="text-3xl font-semibold">Search Syntax Guide</h1>
+      <p class="text-sm text-zinc-600">
+        Learn the current search syntax for global and deck-scoped card search.
+      </p>
+    </div>
+
+    <section class="rounded-lg border p-5 shadow-sm space-y-4">
+      <h2 class="text-xl font-medium">Free text</h2>
+      <p class="text-sm text-zinc-600">
+        Plain terms search across card name, type line, and oracle text.
+      </p>
+
+      <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">sol ring</div>
+      <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">draw</div>
+      <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">"draw a card"</div>
+    </section>
+
+    <section class="rounded-lg border p-5 shadow-sm space-y-4">
+      <h2 class="text-xl font-medium">Field filters</h2>
+      <p class="text-sm text-zinc-600">
+        Use field-prefixed filters for more precise matching.
+      </p>
+
+      <div class="space-y-2">
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">name:sol</div>
+        <div class="text-sm text-zinc-600">Search card names containing “sol”.</div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">text:draw</div>
+        <div class="text-sm text-zinc-600">Search oracle text containing “draw”.</div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">text:"draw two cards"</div>
+        <div class="text-sm text-zinc-600">Search an exact quoted phrase in oracle text.</div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">type:creature</div>
+        <div class="text-sm text-zinc-600">Search cards whose type line contains “creature”.</div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border p-5 shadow-sm space-y-4">
+      <h2 class="text-xl font-medium">Mana value comparisons</h2>
+      <p class="text-sm text-zinc-600">
+        Compare mana value using standard operators.
+      </p>
+
+      <div class="space-y-2">
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">mv=2</div>
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">mv&lt;3</div>
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">mv&lt;=3</div>
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">mv&gt;4</div>
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">mv&gt;=5</div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border p-5 shadow-sm space-y-4">
+      <h2 class="text-xl font-medium">Flags</h2>
+      <p class="text-sm text-zinc-600">
+        Some special card traits can be searched with <span class="font-mono">is:</span>.
+      </p>
+
+      <div class="space-y-2">
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">is:legendary</div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border p-5 shadow-sm space-y-4">
+      <h2 class="text-xl font-medium">Combining terms</h2>
+      <p class="text-sm text-zinc-600">
+        Multiple terms are combined together.
+      </p>
+
+      <div class="space-y-2">
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">type:creature mv&lt;=3</div>
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">name:sol text:mana</div>
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">
+          type:creature text:"draw a card"
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border p-5 shadow-sm space-y-4">
+      <h2 class="text-xl font-medium">Where it works</h2>
+      <ul class="list-disc space-y-1 pl-5 text-sm text-zinc-600">
+        <li>Global search searches the full card catalog.</li>
+        <li>Deck search applies the same syntax to cards already in a selected deck.</li>
+      </ul>
+    </section>
+  </div>
+</Layouts.app>
