@@ -116,6 +116,26 @@ defmodule TopDeckTutor.Decks do
     end
   end
 
+  def search_ast_in_deck(%Deck{id: deck_id}, ast) when is_list(ast) do
+    base_query =
+      from c in Card,
+        join: de in DeckEntry,
+        on: de.card_id == c.id,
+        where: de.deck_id == ^deck_id,
+        order_by: [asc: de.section, asc: c.name],
+        select: %{card: c, quantity: de.quantity, section: de.section}
+
+    # compile against the card binding, then keep the same select
+    TopDeckTutor.Search.Compiler.compile(ast, base_query)
+    |> Repo.all()
+  end
+
+  def search_query_in_deck(%Deck{} = deck, query_string) when is_binary(query_string) do
+    with {:ok, ast} <- TopDeckTutor.Search.parse(query_string) do
+      {:ok, search_ast_in_deck(deck, ast)}
+    end
+  end
+
   def update_entry(%DeckEntry{} = entry, attrs) do
     entry
     |> DeckEntry.changeset(attrs)

@@ -66,7 +66,7 @@ defmodule TopDeckTutorWeb.Layouts do
               </.link>
 
               <.link
-                href={~p"/users/log_out"}
+                href={~p"/users/log-out"}
                 method="delete"
                 class="rounded-md border px-3 py-2 font-medium transition hover:bg-zinc-50"
               >
@@ -81,7 +81,7 @@ defmodule TopDeckTutorWeb.Layouts do
               </.link>
 
               <.link
-                navigate={~p"/users/log_in"}
+                navigate={~p"/users/log-in"}
                 class="rounded-md bg-zinc-900 px-3 py-2 font-medium text-white transition hover:bg-zinc-700"
               >
                 Log in
