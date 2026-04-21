@@ -5,7 +5,7 @@
         <h1 class="text-2xl font-semibold">
           {@deck.name}
         </h1>
-        <p class="text-sm text-zinc-600">
+        <p class="app-muted text-sm">
           {@deck.format} · {@deck.visibility}
         </p>
       </div>
@@ -13,42 +13,42 @@
       <div class="flex gap-2">
         <.link
           navigate={~p"/decks"}
-          class="rounded-md border px-3 py-2 text-sm font-medium transition hover:bg-zinc-50"
+          class="app-button-secondary"
         >
           Back to decks
         </.link>
 
         <.link
           patch={~p"/decks/#{@deck}/show/edit"}
-          class="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
+          class="app-button-primary"
         >
           Edit deck
         </.link>
 
         <.link
           navigate={~p"/decks/#{@deck}/search"}
-          class="rounded-md border px-3 py-2 text-sm font-medium transition hover:bg-zinc-50"
+          class="app-button-secondary"
         >
           Search deck
         </.link>
       </div>
     </div>
 
-    <%= if @deck.description not in [nil, "" ] do %>
-      <div class="rounded-lg border p-4 shadow-sm">
-        <h2 class="mb-2 text-sm font-medium uppercase tracking-wide text-zinc-500">
+    <%= if @deck.description not in [nil, ""] do %>
+      <div class="app-panel p-4">
+        <h2 class="app-muted mb-2 text-sm font-medium uppercase tracking-wide">
           Description
         </h2>
-        <p class="text-sm text-zinc-700">
+        <p class="text-sm">
           {@deck.description}
         </p>
       </div>
     <% end %>
 
-    <section class="space-y-4 rounded-lg border p-4 shadow-sm">
+    <section class="app-panel space-y-4 p-4">
       <div>
         <h2 class="text-lg font-medium">Add cards</h2>
-        <p class="text-sm text-zinc-600">
+        <p class="app-muted text-sm">
           Search the catalog and add cards directly to this deck.
         </p>
       </div>
@@ -61,37 +61,38 @@
           label="Search cards"
           placeholder="Try: Sol Ring, Brushland, creature, draw..."
           autocomplete="off"
+          class="app-input"
         />
       </.form>
 
-      <%= if @search_term !="" and @search_results==[] do %>
-        <div class="rounded-md border border-dashed p-4 text-sm text-zinc-500">
+      <%= if @search_term != "" and @search_results == [] do %>
+        <div class="app-panel border-dashed p-4 text-sm app-muted">
           No cards found.
         </div>
       <% end %>
 
-      <%= if @search_results !=[] do %>
+      <%= if @search_results != [] do %>
         <div class="space-y-2">
           <%= for card <- @search_results do %>
-            <div class="rounded-lg border p-3">
+            <div class="app-panel p-3">
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
                   <div class="font-medium">{card.name}</div>
 
-                  <%= if card.mana_cost not in [nil, "" ] do %>
-                    <div class="text-sm text-zinc-600">{card.mana_cost}</div>
+                  <%= if card.mana_cost not in [nil, ""] do %>
+                    <div class="app-muted text-sm">{card.mana_cost}</div>
                   <% end %>
 
-                  <div class="text-sm text-zinc-600">{card.type_line}</div>
+                  <div class="app-muted text-sm">{card.type_line}</div>
 
-                  <%= if card.oracle_text not in [nil, "" ] do %>
-                    <div class="mt-1 whitespace-pre-line text-sm text-zinc-500">
+                  <%= if card.oracle_text not in [nil, ""] do %>
+                    <div class="app-muted mt-1 whitespace-pre-line text-sm">
                       {card.oracle_text}
                     </div>
                   <% end %>
                 </div>
 
-                <div class="shrink-0 text-sm text-zinc-500">
+                <div class="app-muted shrink-0 text-sm">
                   MV {card.mana_value}
                 </div>
               </div>
@@ -106,7 +107,7 @@
 
                 <div>
                   <label class="mb-1 block text-sm font-medium">Section</label>
-                  <select name="section" class="rounded-md border px-3 py-2 text-sm">
+                  <select name="section" class="app-input">
                     <option value="mainboard">Mainboard</option>
                     <option value="sideboard">Sideboard</option>
                     <option value="maybeboard">Maybeboard</option>
@@ -121,14 +122,14 @@
                     name="quantity"
                     min="1"
                     value="1"
-                    class="w-20 rounded-md border px-3 py-2 text-sm"
+                    class="app-input w-20"
                   />
                 </div>
 
                 <button
                   type="submit"
                   phx-disable-with="Adding..."
-                  class="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
+                  class="app-button-primary"
                 >
                   Add to deck
                 </button>
@@ -142,26 +143,26 @@
     <section class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-medium">Decklist</h2>
-        <div class="text-sm text-zinc-500">
+        <div class="app-muted text-sm">
           {Enum.reduce(@deck.deck_entries, 0, fn entry, acc -> entry.quantity + acc end)} cards
         </div>
       </div>
 
-      <%= if map_size(@entries_by_section)==0 do %>
-        <div class="rounded-lg border border-dashed p-6 text-sm text-zinc-500 shadow-sm">
+      <%= if map_size(@entries_by_section) == 0 do %>
+        <div class="app-panel border-dashed p-6 text-sm app-muted">
           This deck is empty. Search above to add some cards.
         </div>
       <% end %>
 
       <div class="space-y-6">
         <%= for {section, entries} <- @entries_by_section do %>
-          <section class="rounded-lg border p-4 shadow-sm">
+          <section class="app-panel p-4">
             <div class="mb-3 flex items-center justify-between">
               <h2 class="text-lg font-medium capitalize">
                 {section}
               </h2>
 
-              <div class="text-sm text-zinc-500">
+              <div class="app-muted text-sm">
                 {Enum.reduce(entries, 0, fn entry, acc -> entry.quantity + acc end)} cards
               </div>
             </div>
@@ -173,19 +174,19 @@
                     <div class="font-medium">
                       {entry.quantity} × {entry.card.name}
                     </div>
-                    <div class="text-sm text-zinc-600">
+                    <div class="app-muted text-sm">
                       {entry.card.type_line}
                     </div>
 
-                    <%= if entry.card.oracle_text not in [nil, "" ] do %>
-                      <div class="mt-1 whitespace-pre-line text-sm text-zinc-500">
+                    <%= if entry.card.oracle_text not in [nil, ""] do %>
+                      <div class="app-muted mt-1 whitespace-pre-line text-sm">
                         {entry.card.oracle_text}
                       </div>
                     <% end %>
                   </div>
 
                   <div class="flex shrink-0 items-center gap-3">
-                    <div class="text-sm text-zinc-500">
+                    <div class="app-muted text-sm">
                       MV {entry.card.mana_value}
                     </div>
 
@@ -193,7 +194,7 @@
                       phx-click="remove_entry"
                       phx-value-id={entry.id}
                       data-confirm="Remove this card from the deck?"
-                      class="text-sm text-red-600 underline"
+                      class="text-sm app-link-danger underline"
                     >
                       Remove
                     </button>
@@ -218,7 +219,7 @@
       aria-label="Close modal"
     >
     </.link>
-    <div class="relative z-10 w-full max-w-2xl rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl">
+    <div class="app-panel relative z-10 w-full max-w-2xl rounded-3xl p-6 shadow-2xl">
       <div class="mb-4 flex items-center justify-between gap-4">
         <h2 class="text-xl font-semibold">{@page_title}</h2>
         <.link
