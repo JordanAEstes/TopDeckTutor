@@ -66,6 +66,31 @@ defmodule TopDeckTutor.Cards.Importer do
     :updated_at
   ]
 
+  def import_cards(cards, opts \\ []) when is_list(cards) do
+    batch_size = Keyword.get(opts, :batch_size, @default_batch_size)
+
+    cards
+    |> Enum.map(&Normalizer.from_scryfall/1)
+    |> Stream.chunk_every(batch_size)
+    |> Enum.reduce(%{ok: 0, error: 0, batches: 0}, fn batch, acc ->
+      case import_batch(batch) do
+        {count, nil} ->
+          %{
+            ok: acc.ok + count,
+            error: acc.error,
+            batches: acc.batches + 1
+          }
+
+        {0, _error} ->
+          %{
+            ok: acc.ok,
+            error: acc.error + length(batch),
+            batches: acc.batches + 1
+          }
+      end
+    end)
+  end
+
   def import_file(path, opts \\ []) when is_binary(path) do
     batch_size = Keyword.get(opts, :batch_size, @default_batch_size)
 

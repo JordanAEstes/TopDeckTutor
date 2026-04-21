@@ -14,7 +14,7 @@ defmodule TopDeckTutor.Decks.Deck do
     timestamps()
   end
 
-  @fields [:name, :format, :description, :visibility, :user_id]
+  @fields [:name, :format, :description, :visibility]
 
   def changeset(deck, attrs) do
     deck
