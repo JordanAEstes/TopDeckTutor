@@ -10,6 +10,12 @@ defmodule TopDeckTutorWeb.UserLive.Login do
       <div class="mx-auto max-w-md px-4 py-12">
         <div class="space-y-6">
           <div class="space-y-2 text-center">
+            <img
+              src={~p"/images/TDT-logo.png"}
+              alt="Top Deck Tutor"
+              class="mx-auto size-24"
+            />
+
             <p class="text-sm font-medium uppercase tracking-[0.16em] app-muted">
               Welcome back
             </p>

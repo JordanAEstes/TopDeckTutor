@@ -40,6 +40,7 @@ defmodule TopDeckTutorWeb.Router do
     scope "/dev" do
       pipe_through :browser
 
+      get "/404", TopDeckTutorWeb.PageController, :not_found
       live_dashboard "/dashboard", metrics: TopDeckTutorWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end

@@ -33,10 +33,15 @@ defmodule TopDeckTutorWeb.Layouts do
     ~H"""
     <div class="app-shell flex min-h-screen flex-col">
       <header class="app-header sticky top-0 z-40 backdrop-blur">
-        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-2">
           <div class="flex items-center gap-6">
-            <.link navigate={~p"/"} class="text-lg font-semibold tracking-tight">
-              TopDeckTutor
+            <.link navigate={~p"/"} class="inline-flex items-center gap-3">
+              <img
+                src={~p"/images/nav-logo.png"}
+                alt="Top Deck Tutor"
+                class="size-14"
+              />
+              <span class="text-lg font-semibold tracking-tight">TopDeckTutor</span>
             </.link>
 
             <nav class="hidden items-center gap-4 md:flex">
@@ -92,8 +97,12 @@ defmodule TopDeckTutorWeb.Layouts do
       </main>
 
       <footer class="app-footer">
-        <div class="mx-auto max-w-6xl px-4 py-4 text-sm">
-          TopDeckTutor
+        <div class="mx-auto flex h-14 max-w-6xl items-center justify-center px-4 pt-1">
+          <img
+            src={~p"/images/text-logo.png"}
+            alt="Top Deck Tutor"
+            class="h-auto w-40 scale-150"
+          />
         </div>
       </footer>
     </div>
