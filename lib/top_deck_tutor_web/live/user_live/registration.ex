@@ -8,35 +8,54 @@ defmodule TopDeckTutorWeb.UserLive.Registration do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-sm">
-        <div class="text-center">
-          <.header>
-            Register for an account
-            <:subtitle>
-              Already registered?
-              <.link navigate={~p"/users/log-in"} class="font-semibold text-brand hover:underline">
+      <div class="mx-auto max-w-md px-4 py-12">
+        <div class="space-y-6">
+          <div class="space-y-2 text-center">
+            <p class="text-sm font-medium uppercase tracking-[0.16em] app-muted">
+              New account
+            </p>
+
+            <h1 class="text-3xl font-semibold tracking-tight">
+              Create your account
+            </h1>
+
+            <p class="text-sm app-muted">
+              Build decks, search cards, and organize your collection.
+            </p>
+          </div>
+
+          <div class="app-panel p-6 sm:p-8">
+            <.form
+              for={@form}
+              id="registration_form"
+              phx-submit="save"
+              phx-change="validate"
+              class="space-y-5"
+            >
+              <.input
+                field={@form[:email]}
+                type="email"
+                label="Email"
+                autocomplete="username"
+                spellcheck="false"
+                required
+                phx-mounted={JS.focus()}
+                class="app-input"
+              />
+
+              <.button phx-disable-with="Creating account..." class="app-button-primary w-full">
+                Create account
+              </.button>
+            </.form>
+
+            <div class="mt-5 border-t pt-4 text-center text-sm">
+              <span class="app-muted">Already registered?</span>
+              <.link navigate={~p"/users/log-in"} class="ml-1 font-medium app-muted hover:underline">
                 Log in
               </.link>
-              to your account now.
-            </:subtitle>
-          </.header>
+            </div>
+          </div>
         </div>
-
-        <.form for={@form} id="registration_form" phx-submit="save" phx-change="validate">
-          <.input
-            field={@form[:email]}
-            type="email"
-            label="Email"
-            autocomplete="username"
-            spellcheck="false"
-            required
-            phx-mounted={JS.focus()}
-          />
-
-          <.button phx-disable-with="Creating account..." class="btn btn-primary w-full">
-            Create an account
-          </.button>
-        </.form>
       </div>
     </Layouts.app>
     """
