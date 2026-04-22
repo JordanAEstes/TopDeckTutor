@@ -115,6 +115,20 @@
     filter: brightness(1.3);
   }
 
+  .app-flash-success {
+    background: #ecd28a;
+    color: #4f3f18;
+    border: 1px solid #d5b862;
+    box-shadow: 0 12px 30px color-mix(in srgb, var(--brand) 20%, transparent);
+  }
+
+  .app-flash-error {
+    background: color-mix(in srgb, var(--danger) 12%, white 88%);
+    color: var(--danger);
+    border: 1px solid color-mix(in srgb, var(--danger) 48%, white 52%);
+    box-shadow: 0 12px 30px color-mix(in srgb, var(--danger) 14%, transparent);
+  }
+
   .app-input {
     background: var(--surface);
     color: var(--text);
