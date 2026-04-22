@@ -8,63 +8,112 @@ defmodule TopDeckTutorWeb.UserLive.Settings do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="text-center">
-        <.header>
-          Account Settings
-          <:subtitle>Manage your account email address and password settings</:subtitle>
-        </.header>
+    <Layouts.app flash={@flash} current_scope={assigns[:current_scope]}>
+      <div class="mx-auto max-w-2xl px-4 py-12">
+        <div class="space-y-8">
+          <div class="space-y-2 text-center">
+            <p class="text-sm font-medium uppercase tracking-[0.16em] app-muted">
+              Account
+            </p>
+
+            <h1 class="text-3xl font-semibold tracking-tight">
+              Account Settings
+            </h1>
+
+            <p class="text-sm app-muted">
+              Manage your email address and password settings.
+            </p>
+          </div>
+
+          <div class="grid gap-6">
+            <section class="app-panel p-6 sm:p-8">
+              <div class="mb-5 space-y-1">
+                <h2 class="text-xl font-medium">Email address</h2>
+                <p class="text-sm app-muted">
+                  Update the email address associated with your account.
+                </p>
+              </div>
+
+              <.form
+                for={@email_form}
+                id="email_form"
+                phx-submit="update_email"
+                phx-change="validate_email"
+                class="space-y-5"
+              >
+                <.input
+                  field={@email_form[:email]}
+                  type="email"
+                  label="Email"
+                  autocomplete="username"
+                  spellcheck="false"
+                  required
+                  class="app-input"
+                />
+
+                <div class="flex justify-end">
+                  <.button class="app-button-primary" phx-disable-with="Changing...">
+                    Change Email
+                  </.button>
+                </div>
+              </.form>
+            </section>
+
+            <section class="app-panel p-6 sm:p-8">
+              <div class="mb-5 space-y-1">
+                <h2 class="text-xl font-medium">Password</h2>
+                <p class="text-sm app-muted">
+                  Choose a strong password and keep your account secure.
+                </p>
+              </div>
+
+              <.form
+                for={@password_form}
+                id="password_form"
+                action={~p"/users/update-password"}
+                method="post"
+                phx-change="validate_password"
+                phx-submit="update_password"
+                phx-trigger-action={@trigger_submit}
+                class="space-y-5"
+              >
+                <input
+                  name={@password_form[:email].name}
+                  type="hidden"
+                  id="hidden_user_email"
+                  spellcheck="false"
+                  value={@current_email}
+                />
+
+                <.input
+                  field={@password_form[:password]}
+                  type="password"
+                  label="New password"
+                  autocomplete="new-password"
+                  spellcheck="false"
+                  required
+                  class="app-input"
+                />
+
+                <.input
+                  field={@password_form[:password_confirmation]}
+                  type="password"
+                  label="Confirm new password"
+                  autocomplete="new-password"
+                  spellcheck="false"
+                  class="app-input"
+                />
+
+                <div class="flex justify-end">
+                  <.button class="app-button-primary" phx-disable-with="Saving...">
+                    Save Password
+                  </.button>
+                </div>
+              </.form>
+            </section>
+          </div>
+        </div>
       </div>
-
-      <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
-        <.input
-          field={@email_form[:email]}
-          type="email"
-          label="Email"
-          autocomplete="username"
-          spellcheck="false"
-          required
-        />
-        <.button variant="primary" phx-disable-with="Changing...">Change Email</.button>
-      </.form>
-
-      <div class="divider" />
-
-      <.form
-        for={@password_form}
-        id="password_form"
-        action={~p"/users/update-password"}
-        method="post"
-        phx-change="validate_password"
-        phx-submit="update_password"
-        phx-trigger-action={@trigger_submit}
-      >
-        <input
-          name={@password_form[:email].name}
-          type="hidden"
-          id="hidden_user_email"
-          spellcheck="false"
-          value={@current_email}
-        />
-        <.input
-          field={@password_form[:password]}
-          type="password"
-          label="New password"
-          autocomplete="new-password"
-          spellcheck="false"
-          required
-        />
-        <.input
-          field={@password_form[:password_confirmation]}
-          type="password"
-          label="Confirm new password"
-          autocomplete="new-password"
-          spellcheck="false"
-        />
-        <.button variant="primary" phx-disable-with="Saving...">
-          Save Password
-        </.button>
-      </.form>
     </Layouts.app>
     """
   end

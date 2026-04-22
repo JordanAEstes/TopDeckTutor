@@ -1,54 +1,60 @@
 <Layouts.app flash={@flash} current_scope={@current_scope}>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold">
-          {@deck.name}
-        </h1>
-        <p class="text-sm text-zinc-600">
-          {@deck.format} · {@deck.visibility}
-        </p>
+  <div class="mx-auto max-w-5xl space-y-8 px-4 py-8">
+    <section class="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+      <div class="min-w-0 space-y-3">
+        <div class="space-y-2">
+          <p class="text-sm font-medium uppercase tracking-[0.16em] app-muted">
+            Deck
+          </p>
+
+          <h1 class="truncate text-3xl font-semibold tracking-tight">
+            {@deck.name}
+          </h1>
+
+          <div class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="app-badge">{@deck.format}</span>
+            <span class="app-badge capitalize">{@deck.visibility}</span>
+            <span class="app-muted">
+              {Enum.reduce(@deck.deck_entries, 0, fn entry, acc -> entry.quantity + acc end)} cards
+            </span>
+          </div>
+        </div>
+
+        <%= if @deck.description not in [nil, ""] do %>
+          <p class="max-w-2xl text-sm app-muted">
+            {@deck.description}
+          </p>
+        <% end %>
       </div>
 
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <.link
           navigate={~p"/decks"}
-          class="rounded-md border px-3 py-2 text-sm font-medium transition hover:bg-zinc-50"
+          class="app-button-secondary"
         >
           Back to decks
         </.link>
 
         <.link
           patch={~p"/decks/#{@deck}/show/edit"}
-          class="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
+          class="app-button-primary"
         >
           Edit deck
         </.link>
 
         <.link
           navigate={~p"/decks/#{@deck}/search"}
-          class="rounded-md border px-3 py-2 text-sm font-medium transition hover:bg-zinc-50"
+          class="app-button-secondary"
         >
           Search deck
         </.link>
       </div>
-    </div>
+    </section>
 
-    <%= if @deck.description not in [nil, "" ] do %>
-      <div class="rounded-lg border p-4 shadow-sm">
-        <h2 class="mb-2 text-sm font-medium uppercase tracking-wide text-zinc-500">
-          Description
-        </h2>
-        <p class="text-sm text-zinc-700">
-          {@deck.description}
-        </p>
-      </div>
-    <% end %>
-
-    <section class="space-y-4 rounded-lg border p-4 shadow-sm">
-      <div>
-        <h2 class="text-lg font-medium">Add cards</h2>
-        <p class="text-sm text-zinc-600">
+    <section class="app-panel space-y-4 p-5">
+      <div class="space-y-1">
+        <h2 class="text-xl font-medium">Add cards</h2>
+        <p class="text-sm app-muted">
           Search the catalog and add cards directly to this deck.
         </p>
       </div>
@@ -61,37 +67,40 @@
           label="Search cards"
           placeholder="Try: Sol Ring, Brushland, creature, draw..."
           autocomplete="off"
+          class="app-input"
         />
       </.form>
 
-      <%= if @search_term !="" and @search_results==[] do %>
-        <div class="rounded-md border border-dashed p-4 text-sm text-zinc-500">
+      <%= if @search_term != "" and @search_results == [] do %>
+        <div class="app-panel border-dashed p-4 text-sm app-muted">
           No cards found.
         </div>
       <% end %>
 
-      <%= if @search_results !=[] do %>
-        <div class="space-y-2">
+      <%= if @search_results != [] do %>
+        <div class="space-y-3">
           <%= for card <- @search_results do %>
-            <div class="rounded-lg border p-3">
+            <article class="app-panel-muted p-4">
               <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                  <div class="font-medium">{card.name}</div>
+                <div class="min-w-0 space-y-1">
+                  <.link navigate={~p"/cards/#{card}"} class="font-medium hover:underline">
+                    {card.name}
+                  </.link>
 
-                  <%= if card.mana_cost not in [nil, "" ] do %>
-                    <div class="text-sm text-zinc-600">{card.mana_cost}</div>
+                  <%= if card.mana_cost not in [nil, ""] do %>
+                    <div class="text-sm app-muted">{card.mana_cost}</div>
                   <% end %>
 
-                  <div class="text-sm text-zinc-600">{card.type_line}</div>
+                  <div class="text-sm app-muted">{card.type_line}</div>
 
-                  <%= if card.oracle_text not in [nil, "" ] do %>
-                    <div class="mt-1 whitespace-pre-line text-sm text-zinc-500">
+                  <%= if card.oracle_text not in [nil, ""] do %>
+                    <div class="mt-2 whitespace-pre-line text-sm app-muted">
                       {card.oracle_text}
                     </div>
                   <% end %>
                 </div>
 
-                <div class="shrink-0 text-sm text-zinc-500">
+                <div class="shrink-0 text-sm app-muted">
                   MV {card.mana_value}
                 </div>
               </div>
@@ -100,13 +109,13 @@
                 for={%{}}
                 id={"add-card-#{card.id}"}
                 phx-submit="add_card"
-                class="mt-3 flex flex-wrap items-end gap-2"
+                class="mt-4 flex flex-wrap items-end gap-3"
               >
                 <input type="hidden" name="card_id" value={card.id} />
 
                 <div>
                   <label class="mb-1 block text-sm font-medium">Section</label>
-                  <select name="section" class="rounded-md border px-3 py-2 text-sm">
+                  <select name="section" class="app-input">
                     <option value="mainboard">Mainboard</option>
                     <option value="sideboard">Sideboard</option>
                     <option value="maybeboard">Maybeboard</option>
@@ -121,86 +130,289 @@
                     name="quantity"
                     min="1"
                     value="1"
-                    class="w-20 rounded-md border px-3 py-2 text-sm"
+                    class="app-input w-20"
                   />
                 </div>
 
                 <button
                   type="submit"
                   phx-disable-with="Adding..."
-                  class="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-700"
+                  class="app-button-primary"
                 >
                   Add to deck
                 </button>
               </.form>
-            </div>
+            </article>
           <% end %>
         </div>
       <% end %>
     </section>
 
     <section class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-medium">Decklist</h2>
-        <div class="text-sm text-zinc-500">
-          {Enum.reduce(@deck.deck_entries, 0, fn entry, acc -> entry.quantity + acc end)} cards
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="space-y-1">
+          <h2 class="text-2xl font-semibold tracking-tight">Decklist</h2>
+          <p class="text-sm app-muted">Cards currently in this deck.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="text-sm app-muted">
+            {Enum.reduce(@deck.deck_entries, 0, fn entry, acc -> entry.quantity + acc end)} cards
+          </div>
+
+          <div class="inline-flex rounded-lg border bg-white p-1 shadow-sm">
+            <button
+              phx-click="set_view_mode"
+              phx-value-mode="details"
+              class={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                @view_mode == "details" && "bg-[var(--brand)] text-[var(--text)]",
+                @view_mode != "details" && "text-zinc-600 hover:bg-zinc-100"
+              ]}
+            >
+              Details
+            </button>
+
+            <button
+              phx-click="set_view_mode"
+              phx-value-mode="images"
+              class={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                @view_mode == "images" && "bg-[var(--brand)] text-[var(--text)]",
+                @view_mode != "images" && "text-zinc-600 hover:bg-zinc-100"
+              ]}
+            >
+              Images
+            </button>
+
+            <button
+              phx-click="set_view_mode"
+              phx-value-mode="list"
+              class={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                @view_mode == "list" && "bg-[var(--brand)] text-[var(--text)]",
+                @view_mode != "list" && "text-zinc-600 hover:bg-zinc-100"
+              ]}
+            >
+              List
+            </button>
+          </div>
         </div>
       </div>
 
-      <%= if map_size(@entries_by_section)==0 do %>
-        <div class="rounded-lg border border-dashed p-6 text-sm text-zinc-500 shadow-sm">
-          This deck is empty. Search above to add some cards.
+      <%= if map_size(@entries_by_section) == 0 do %>
+        <div class="app-panel border-dashed p-8 text-center">
+          <div class="mx-auto max-w-md space-y-2">
+            <h3 class="text-lg font-medium">This deck is empty</h3>
+            <p class="text-sm app-muted">
+              Search above to add some cards and start building it out.
+            </p>
+          </div>
         </div>
       <% end %>
 
-      <div class="space-y-6">
+      <div class="space-y-5">
         <%= for {section, entries} <- @entries_by_section do %>
-          <section class="rounded-lg border p-4 shadow-sm">
-            <div class="mb-3 flex items-center justify-between">
-              <h2 class="text-lg font-medium capitalize">
-                {section}
-              </h2>
-
-              <div class="text-sm text-zinc-500">
-                {Enum.reduce(entries, 0, fn entry, acc -> entry.quantity + acc end)} cards
+          <section class="app-panel overflow-hidden">
+            <div class="flex items-center justify-between border-b px-5 py-4">
+              <div class="space-y-1">
+                <h3 class="text-xl font-medium capitalize">{section}</h3>
+                <p class="text-sm app-muted">
+                  {Enum.reduce(entries, 0, fn entry, acc -> entry.quantity + acc end)} cards
+                </p>
               </div>
             </div>
 
-            <div class="space-y-2">
-              <%= for entry <- entries do %>
-                <div class="flex items-start justify-between gap-4 border-b pb-2 last:border-b-0">
-                  <div class="min-w-0">
-                    <div class="font-medium">
-                      {entry.quantity} × {entry.card.name}
+            <%= if @view_mode == "details" do %>
+              <div class="divide-y">
+                <%= for entry <- entries do %>
+                  <article class="px-5 py-4">
+                    <div class="flex items-start justify-between gap-4">
+                      <div class="min-w-0 space-y-1">
+                        <div class="text-lg font-medium">
+                          {entry.quantity} × {entry.card.name}
+                        </div>
+
+                        <div class="text-sm app-muted">
+                          {entry.card.type_line}
+                        </div>
+
+                        <%= if entry.card.oracle_text not in [nil, ""] do %>
+                          <div class="mt-2 whitespace-pre-line text-sm app-muted">
+                            {entry.card.oracle_text}
+                          </div>
+                        <% end %>
+                      </div>
+
+                      <div class="flex shrink-0 items-center gap-4 pt-1">
+                        <div class="text-sm app-muted">
+                          MV {entry.card.mana_value}
+                        </div>
+
+                        <button
+                          phx-click="remove_entry"
+                          phx-value-id={entry.id}
+                          data-confirm="Remove this card from the deck?"
+                          class="app-link-danger"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
-                    <div class="text-sm text-zinc-600">
-                      {entry.card.type_line}
+                  </article>
+                <% end %>
+              </div>
+            <% end %>
+
+            <%= if @view_mode == "images" do %>
+              <div class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                <%= for entry <- entries do %>
+                  <article class="space-y-2">
+                    <div class="relative overflow-hidden rounded-xl border bg-white shadow-sm">
+                      <%= if image = entry.card.image_uris["normal"] do %>
+                        <img
+                          src={image}
+                          alt={entry.card.name}
+                          class="w-full"
+                        />
+                      <% else %>
+                        <div class="flex aspect-[5/7] items-center justify-center bg-zinc-100 text-sm app-muted">
+                          No image
+                        </div>
+                      <% end %>
+
+                      <div class="absolute left-2 top-2 rounded-full bg-black/75 px-2 py-1 text-xs font-semibold text-white">
+                        ×{entry.quantity}
+                      </div>
                     </div>
 
-                    <%= if entry.card.oracle_text not in [nil, "" ] do %>
-                      <div class="mt-1 whitespace-pre-line text-sm text-zinc-500">
-                        {entry.card.oracle_text}
+                    <div class="flex items-start justify-between gap-2">
+                      <.link
+                        navigate={~p"/cards/#{entry.card}"}
+                        class="min-w-0 text-sm font-medium hover:underline"
+                      >
+                        {entry.card.name}
+                      </.link>
+
+                      <button
+                        phx-click="remove_entry"
+                        phx-value-id={entry.id}
+                        data-confirm="Remove this card from the deck?"
+                        class="shrink-0 text-xs app-link-danger"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </article>
+                <% end %>
+              </div>
+            <% end %>
+
+            <%= if @view_mode == "list" do %>
+              <div class="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+                <aside class="hidden lg:block">
+                  <div class="sticky top-24 space-y-3">
+                    <div class="app-panel overflow-hidden p-3">
+                      <%= if @preview_card do %>
+                        <%= if image = @preview_card.image_uris["normal"] do %>
+                          <img
+                            src={image}
+                            alt={@preview_card.name}
+                            class="w-full rounded-xl"
+                          />
+                        <% else %>
+                          <div class="flex aspect-[5/7] items-center justify-center rounded-xl bg-zinc-100 text-sm app-muted">
+                            No image
+                          </div>
+                        <% end %>
+                      <% end %>
+                    </div>
+
+                    <%= if @preview_card do %>
+                      <div class="app-panel p-4">
+                        <div class="space-y-1">
+                          <div class="font-semibold">{@preview_card.name}</div>
+
+                          <%= if @preview_card.mana_cost not in [nil, ""] do %>
+                            <div class="text-sm app-muted">{@preview_card.mana_cost}</div>
+                          <% end %>
+
+                          <div class="text-sm app-muted">{@preview_card.type_line}</div>
+                        </div>
+
+                        <%= if @preview_card.oracle_text not in [nil, ""] do %>
+                          <div class="mt-3 whitespace-pre-line text-sm app-muted">
+                            {@preview_card.oracle_text}
+                          </div>
+                        <% end %>
                       </div>
                     <% end %>
                   </div>
+                </aside>
 
-                  <div class="flex shrink-0 items-center gap-3">
-                    <div class="text-sm text-zinc-500">
-                      MV {entry.card.mana_value}
-                    </div>
+                <div class="space-y-5">
+                  <%= for {section, entries} <- @entries_by_section do %>
+                    <section class="app-panel overflow-hidden">
+                      <div class="flex items-center justify-between border-b px-5 py-4">
+                        <div class="space-y-1">
+                          <h3 class="text-xl font-medium capitalize">{section}</h3>
+                          <p class="text-sm app-muted">
+                            {Enum.reduce(entries, 0, fn entry, acc -> entry.quantity + acc end)} cards
+                          </p>
+                        </div>
+                      </div>
 
-                    <button
-                      phx-click="remove_entry"
-                      phx-value-id={entry.id}
-                      data-confirm="Remove this card from the deck?"
-                      class="text-sm text-red-600 underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                      <div class="divide-y">
+                        <%= for entry <- entries do %>
+                          <article
+                            class={[
+                              "group flex items-center justify-between gap-4 px-5 py-3 transition hover:bg-black/5",
+                              @preview_card && @preview_card.id == entry.card.id && "bg-black/5"
+                            ]}
+                            id={"deck-entry-#{entry.id}"}
+                            phx-hook="CardPreview"
+                            data-card-id={entry.card.id}
+                            phx-value-card_id={entry.card.id}
+                          >
+                            <div class="min-w-0 flex items-center gap-3">
+                              <span class="w-8 shrink-0 text-sm font-medium app-muted">
+                                {entry.quantity}×
+                              </span>
+
+                              <.link
+                                navigate={~p"/cards/#{entry.card}"}
+                                class="truncate font-medium hover:underline"
+                              >
+                                {entry.card.name}
+                              </.link>
+
+                              <span class="hidden text-sm app-muted lg:inline">
+                                {entry.card.type_line}
+                              </span>
+                            </div>
+
+                            <div class="flex shrink-0 items-center gap-4">
+                              <span class="text-sm app-muted">
+                                MV {entry.card.mana_value}
+                              </span>
+
+                              <button
+                                phx-click="remove_entry"
+                                phx-value-id={entry.id}
+                                data-confirm="Remove this card from the deck?"
+                                class="text-sm app-link-danger opacity-0 transition group-hover:opacity-100"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </article>
+                        <% end %>
+                      </div>
+                    </section>
+                  <% end %>
                 </div>
-              <% end %>
-            </div>
+              </div>
+            <% end %>
           </section>
         <% end %>
       </div>
@@ -218,9 +430,16 @@
       aria-label="Close modal"
     >
     </.link>
-    <div class="relative z-10 w-full max-w-2xl rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl">
-      <div class="mb-4 flex items-center justify-between gap-4">
-        <h2 class="text-xl font-semibold">{@page_title}</h2>
+
+    <div class="app-panel relative z-10 w-full max-w-2xl rounded-3xl p-6 shadow-2xl">
+      <div class="mb-5 flex items-center justify-between gap-4">
+        <div class="space-y-1">
+          <p class="text-xs font-medium uppercase tracking-[0.16em] app-muted">
+            Deck
+          </p>
+          <h2 class="text-xl font-semibold">{@page_title}</h2>
+        </div>
+
         <.link
           patch={~p"/decks/#{@deck}"}
           class="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
