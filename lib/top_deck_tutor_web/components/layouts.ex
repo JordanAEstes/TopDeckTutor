@@ -67,7 +67,7 @@ defmodule TopDeckTutorWeb.Layouts do
               </.link>
 
               <.link
-                href={~p"/users/log_out"}
+                href={~p"/users/log-out"}
                 method="delete"
                 class="app-button-secondary"
               >
@@ -78,7 +78,7 @@ defmodule TopDeckTutorWeb.Layouts do
                 Register
               </.link>
 
-              <.link navigate={~p"/users/log_in"} class="app-button-primary">
+              <.link navigate={~p"/users/log-in"} class="app-button-primary">
                 Log in
               </.link>
             <% end %>
@@ -87,6 +87,7 @@ defmodule TopDeckTutorWeb.Layouts do
       </header>
 
       <main class="flex-1">
+        <.flash_group flash={@flash} />
         {render_slot(@inner_block)}
       </main>
 

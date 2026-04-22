@@ -21,8 +21,6 @@ defmodule TopDeckTutorWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    live "/search", SearchLive, :index
-    live "/syntax", SyntaxGuideLive, :index
   end
 
   # Other scopes may use custom stacks.
@@ -72,6 +70,9 @@ defmodule TopDeckTutorWeb.Router do
 
     live_session :current_user,
       on_mount: [{TopDeckTutorWeb.UserAuth, :mount_current_scope}] do
+      live "/search", SearchLive, :index
+      live "/syntax", SyntaxGuideLive, :index
+      live "/cards/:id", CardLive.Show, :show
       live "/users/register", UserLive.Registration, :new
       live "/users/log-in", UserLive.Login, :new
       live "/users/log-in/:token", UserLive.Confirmation, :new

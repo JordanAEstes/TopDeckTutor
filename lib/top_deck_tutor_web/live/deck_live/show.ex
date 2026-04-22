@@ -11,7 +11,6 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   end
 
   @impl true
-  @impl true
   def handle_params(%{"id" => id} = params, _url, socket) do
     deck = Decks.get_user_deck_with_entries!(socket.assigns.current_scope.user, id)
     view_mode = normalize_view_mode(Map.get(params, "view", "details"))
@@ -63,11 +62,6 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   def handle_event("preview_card", %{"card_id" => card_id}, socket) do
     card = TopDeckTutor.Cards.get_card!(card_id)
     {:noreply, assign(socket, :preview_card, card)}
-  end
-
-  @impl true
-  def handle_event("clear_preview_card", _params, socket) do
-    {:noreply, socket}
   end
 
   def handle_event(
