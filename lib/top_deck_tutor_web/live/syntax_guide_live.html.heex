@@ -36,6 +36,12 @@
 
         <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">type:creature</div>
         <div class="text-sm text-zinc-600">Search cards whose type line contains “creature”.</div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">rarity:rare</div>
+        <div class="text-sm text-zinc-600">Match cards with rarity exactly equal to “rare”.</div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">set:mh3</div>
+        <div class="text-sm text-zinc-600">Match cards printed in a specific set code.</div>
       </div>
     </section>
 
@@ -66,6 +72,40 @@
     </section>
 
     <section class="rounded-lg border p-5 shadow-sm space-y-4">
+      <h2 class="text-xl font-medium">Formats and colors</h2>
+      <p class="text-sm text-zinc-600">
+        Search card legality by format, and search either actual card colors or color identity.
+      </p>
+
+      <div class="space-y-2">
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">legal:commander</div>
+        <div class="text-sm text-zinc-600">Cards legal in Commander.</div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">banned:legacy</div>
+        <div class="text-sm text-zinc-600">Cards banned in Legacy.</div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">restricted:vintage</div>
+        <div class="text-sm text-zinc-600">Cards restricted in Vintage.</div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">color:w</div>
+        <div class="text-sm text-zinc-600">Match cards whose actual colors include white.</div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">color:wu</div>
+        <div class="text-sm text-zinc-600">
+          Match cards whose actual colors include both white and blue.
+        </div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">color:c</div>
+        <div class="text-sm text-zinc-600">Match colorless cards.</div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">ci:wu</div>
+        <div class="text-sm text-zinc-600">
+          Match cards whose color identity includes white and blue. This is distinct from <span class="font-mono">color:</span>, which checks actual card colors.
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border p-5 shadow-sm space-y-4">
       <h2 class="text-xl font-medium">Combining terms</h2>
       <p class="text-sm text-zinc-600">
         Multiple terms are combined together.
@@ -76,6 +116,9 @@
         <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">name:sol text:mana</div>
         <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">
           type:creature text:"draw a card"
+        </div>
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">
+          legal:modern color:w mv&lt;=2
         </div>
       </div>
     </section>

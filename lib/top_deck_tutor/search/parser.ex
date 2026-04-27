@@ -27,6 +27,24 @@ defmodule TopDeckTutor.Search.Parser do
       String.starts_with?(token, "type:") ->
         parse_type(token)
 
+      String.starts_with?(token, "rarity:") ->
+        parse_rarity(token)
+
+      String.starts_with?(token, "set:") ->
+        parse_exact_field(token, "set:", :set_code)
+
+      String.starts_with?(token, "legal:") ->
+        parse_legality(token, "legal:", "legal")
+
+      String.starts_with?(token, "banned:") ->
+        parse_legality(token, "banned:", "banned")
+
+      String.starts_with?(token, "restricted:") ->
+        parse_legality(token, "restricted:", "restricted")
+
+      String.starts_with?(token, "color:") ->
+        parse_color(token)
+
       String.starts_with?(token, "ci:") ->
         parse_color_identity(token)
 
@@ -91,6 +109,54 @@ defmodule TopDeckTutor.Search.Parser do
     end
   end
 
+  defp parse_rarity("rarity:"), do: {:error, "Missing value for rarity:"}
+
+  defp parse_rarity(token) do
+    with {:ok, value} <- normalized_field_value(token, "rarity:"),
+         :ok <- validate_rarity(value) do
+      {:ok, {:field_eq, :rarity, value}}
+    end
+  end
+
+  defp parse_exact_field(token, prefix, field) do
+    with {:ok, value} <- normalized_field_value(token, prefix) do
+      {:ok, {:field_eq, field, value}}
+    end
+  end
+
+  defp parse_legality(token, prefix, status) do
+    with {:ok, value} <- normalized_field_value(token, prefix) do
+      {:ok, {:legality, value, status}}
+    end
+  end
+
+  defp parse_color("color:"), do: {:error, "Missing value for color:"}
+
+  defp parse_color(token) do
+    value =
+      token
+      |> String.replace_prefix("color:", "")
+      |> String.trim()
+      |> String.upcase()
+
+    cond do
+      value == "" ->
+        {:error, "Missing value for color:"}
+
+      value == "C" ->
+        {:ok, {:color, []}}
+
+      true ->
+        colors = String.graphemes(value)
+
+        if Enum.all?(colors, &valid_color?/1) do
+          {:ok, {:color, colors}}
+        else
+          {:error, "Invalid color: #{String.downcase(value)}"}
+        end
+    end
+  end
+
   defp parse_color_identity("ci:"), do: {:error, "Missing value for ci:"}
 
   defp parse_color_identity(token) do
@@ -114,6 +180,26 @@ defmodule TopDeckTutor.Search.Parser do
         end
     end
   end
+
+  defp normalized_field_value(token, prefix) do
+    value =
+      token
+      |> String.replace_prefix(prefix, "")
+      |> String.trim()
+      |> String.downcase()
+
+    if value == "" do
+      {:error, "Missing value for #{prefix}"}
+    else
+      {:ok, value}
+    end
+  end
+
+  defp validate_rarity("common"), do: :ok
+  defp validate_rarity("uncommon"), do: :ok
+  defp validate_rarity("rare"), do: :ok
+  defp validate_rarity("mythic"), do: :ok
+  defp validate_rarity(other), do: {:error, "Unknown rarity: #{other}"}
 
   defp parse_flag("is:"), do: {:error, "Missing value for is:"}
 
