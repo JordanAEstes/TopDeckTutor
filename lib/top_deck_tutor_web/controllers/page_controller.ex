@@ -2,7 +2,9 @@ defmodule TopDeckTutorWeb.PageController do
   use TopDeckTutorWeb, :controller
 
   def home(conn, _params) do
-    render(conn, :home)
+    conn
+    |> put_view(html: TopDeckTutorWeb.PageHTML)
+    |> render(:home)
   end
 
   def not_found(conn, _params) do

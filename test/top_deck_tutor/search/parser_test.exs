@@ -3,6 +3,8 @@ defmodule TopDeckTutor.Search.ParserTest do
 
   alias TopDeckTutor.Search.Parser
 
+  @colors ["w", "u", "b", "r", "g"]
+
   test "parses free text" do
     assert {:ok, [{:text, "draw"}]} = Parser.parse(["draw"])
   end
@@ -18,6 +20,33 @@ defmodule TopDeckTutor.Search.ParserTest do
 
   test "parses flags" do
     assert {:ok, [{:flag, :legendary}]} = Parser.parse(["is:legendary"])
+  end
+
+  test "parses single-color color identity filters" do
+    assert {:ok, [{:color_identity, ["W"]}]} = Parser.parse(["ci:w"])
+  end
+
+  test "parses multi-color color identity filters" do
+    assert {:ok, [{:color_identity, ["W", "U"]}]} = Parser.parse(["ci:wu"])
+  end
+
+  test "parses three-color color identity filters" do
+    assert {:ok, [{:color_identity, ["U", "B", "R"]}]} = Parser.parse(["ci:ubr"])
+  end
+
+  test "parses every non-empty color identity combination" do
+    for colors <- color_combinations(@colors) do
+      token = Enum.join(colors)
+      expected = Enum.map(colors, &String.upcase/1)
+
+      assert {:ok, [{:color_identity, ^expected}]} = Parser.parse(["ci:#{token}"])
+    end
+  end
+
+  test "errors on invalid color identity filters" do
+    assert {:error, "Invalid color identity: x"} = Parser.parse(["ci:x"])
+    assert {:error, "Invalid color identity: wx"} = Parser.parse(["ci:wx"])
+    assert {:error, "Missing value for ci:"} = Parser.parse(["ci:"])
   end
 
   test "errors on unknown flags" do
@@ -66,5 +95,19 @@ defmodule TopDeckTutor.Search.ParserTest do
 
   test "errors on missing negated field value" do
     assert {:error, "Missing value for type:"} = Parser.parse(["-type:"])
+  end
+
+  defp color_combinations(colors) do
+    1..length(colors)
+    |> Enum.flat_map(&combinations(colors, &1))
+  end
+
+  defp combinations(_colors, 0), do: [[]]
+  defp combinations([], _count), do: []
+
+  defp combinations([head | tail], count) do
+    with_head = Enum.map(combinations(tail, count - 1), &[head | &1])
+    without_head = combinations(tail, count)
+    with_head ++ without_head
   end
 end
