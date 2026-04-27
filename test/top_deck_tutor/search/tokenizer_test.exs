@@ -27,4 +27,19 @@ defmodule TopDeckTutor.Search.TokenizerTest do
     assert {:ok, ["name:divination", ~s(text:"Draw two")]} =
              TopDeckTutor.Search.Tokenizer.tokenize(~s(name:divination text:"Draw two"))
   end
+
+  test "keeps quoted name field values together" do
+    assert {:ok, [~s(name:"sol ring")]} =
+             TopDeckTutor.Search.Tokenizer.tokenize(~s(name:"sol ring"))
+  end
+
+  test "keeps negated quoted field values together" do
+    assert {:ok, [~s(-text:"draw a card")]} =
+             TopDeckTutor.Search.Tokenizer.tokenize(~s(-text:"draw a card"))
+  end
+
+  test "keeps negated field terms together" do
+    assert {:ok, ["-type:creature"]} =
+             TopDeckTutor.Search.Tokenizer.tokenize("-type:creature")
+  end
 end

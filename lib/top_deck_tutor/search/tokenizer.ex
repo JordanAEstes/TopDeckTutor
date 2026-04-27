@@ -1,5 +1,5 @@
 defmodule TopDeckTutor.Search.Tokenizer do
-  @token_regex ~r/\w+:"[^"]*"|"[^"]*"|\S+/u
+  @token_regex ~r/-?\w+:"[^"]*"|"[^"]*"|\S+/u
 
   def tokenize(query) when is_binary(query) do
     tokens =

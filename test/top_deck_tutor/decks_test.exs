@@ -213,4 +213,131 @@ defmodule TopDeckTutor.DecksTest do
       assert length(grouped["sideboard"]) == 1
     end
   end
+
+  describe "search_query_in_deck/2" do
+    test "supports quoted name filters within a deck" do
+      deck = deck_fixture()
+      other_deck = deck_fixture()
+
+      matching =
+        card_fixture(%{
+          name: "Sol Ring",
+          normalized_name: "sol ring",
+          oracle_text: "Add two colorless mana."
+        })
+
+      _other_name_match =
+        card_fixture(%{
+          name: "Sol Talisman",
+          normalized_name: "sol talisman",
+          oracle_text: "Suspend 3."
+        })
+
+      other_deck_card =
+        card_fixture(%{
+          name: "Sol Ring",
+          normalized_name: "sol ring",
+          oracle_text: "Reprint in another deck."
+        })
+
+      {:ok, _} = Decks.add_card(deck, matching)
+      {:ok, _} = Decks.add_card(other_deck, other_deck_card)
+
+      assert {:ok, results} = Decks.search_query_in_deck(deck, ~s(name:"Sol Ring"))
+      assert Enum.map(results, & &1.card.id) == [matching.id]
+    end
+
+    test "supports quoted text filters within a deck" do
+      deck = deck_fixture()
+
+      matching =
+        card_fixture(%{
+          name: "Divination",
+          normalized_name: "divination",
+          oracle_text: "Draw a card, then draw a card."
+        })
+
+      _other =
+        card_fixture(%{
+          name: "Shock",
+          normalized_name: "shock",
+          oracle_text: "Deal 2 damage to any target."
+        })
+
+      {:ok, _} = Decks.add_card(deck, matching)
+
+      assert {:ok, results} = Decks.search_query_in_deck(deck, ~s(text:"draw a card"))
+      assert Enum.map(results, & &1.card.id) == [matching.id]
+    end
+
+    test "supports negated type filters within a deck" do
+      deck = deck_fixture()
+
+      excluded =
+        card_fixture(%{
+          name: "Llanowar Elves",
+          normalized_name: "llanowar elves",
+          type_line: "Creature — Elf Druid"
+        })
+
+      included =
+        card_fixture(%{
+          name: "Wrath of God",
+          normalized_name: "wrath of god",
+          type_line: "Sorcery"
+        })
+
+      {:ok, _} = Decks.add_card(deck, excluded)
+      {:ok, _} = Decks.add_card(deck, included)
+
+      assert {:ok, results} = Decks.search_query_in_deck(deck, "-type:creature")
+      assert Enum.map(results, & &1.card.id) == [included.id]
+    end
+
+    test "supports negated text filters within a deck" do
+      deck = deck_fixture()
+
+      excluded =
+        card_fixture(%{
+          name: "Counterspell",
+          normalized_name: "counterspell",
+          oracle_text: "Counter target spell."
+        })
+
+      included =
+        card_fixture(%{
+          name: "Divination",
+          normalized_name: "divination",
+          oracle_text: "Draw two cards."
+        })
+
+      {:ok, _} = Decks.add_card(deck, excluded)
+      {:ok, _} = Decks.add_card(deck, included)
+
+      assert {:ok, results} = Decks.search_query_in_deck(deck, "-text:counter")
+      assert Enum.map(results, & &1.card.id) == [included.id]
+    end
+
+    test "supports negated name filters within a deck" do
+      deck = deck_fixture()
+
+      excluded =
+        card_fixture(%{
+          name: "Ajani, Mentor of Heroes",
+          normalized_name: "ajani mentor of heroes"
+        })
+
+      included =
+        card_fixture(%{
+          name: "Elspeth, Sun's Champion",
+          normalized_name: "elspeth suns champion"
+        })
+
+      {:ok, _} = Decks.add_card(deck, excluded)
+      {:ok, _} = Decks.add_card(deck, included)
+
+      assert {:ok, results} = Decks.search_query_in_deck(deck, "-name:ajani")
+      assert Enum.map(results, & &1.card.id) == [included.id]
+    end
+  end
 end

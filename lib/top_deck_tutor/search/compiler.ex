@@ -5,55 +5,62 @@ defmodule TopDeckTutor.Search.Compiler do
     Enum.reduce(ast, queryable, &apply_node/2)
   end
 
-  defp apply_node({:text, term}, query) do
+  defp apply_node(node, query) do
+    where(query, [c, ...], ^node_dynamic(node))
+  end
+
+  defp node_dynamic({:not, node}) do
+    condition = node_dynamic(node)
+    dynamic([c, ...], not (^condition))
+  end
+
+  defp node_dynamic({:text, term}) do
     pattern = "%#{term}%"
 
-    where(
-      query,
-      [c],
+    dynamic(
+      [c, ...],
       ilike(c.name, ^pattern) or
         ilike(c.type_line, ^pattern) or
         ilike(c.oracle_text, ^pattern)
     )
   end
 
-  defp apply_node({:field_eq, :type, value}, query) do
+  defp node_dynamic({:field_eq, :type, value}) do
     pattern = "%#{value}%"
-
-    where(query, [c], ilike(c.type_line, ^pattern))
+    dynamic([c, ...], ilike(c.type_line, ^pattern))
   end
 
-  defp apply_node({:field_contains, :name, value}, query) do
+  defp node_dynamic({:field_contains, :name, value}) do
     pattern = "%#{value}%"
-    where(query, [c], ilike(c.name, ^pattern))
+    dynamic([c, ...], ilike(c.name, ^pattern))
   end
 
-  defp apply_node({:field_contains, :oracle_text, value}, query) do
+  defp node_dynamic({:field_contains, :oracle_text, value}) do
     pattern = "%#{value}%"
-    where(query, [c], ilike(c.oracle_text, ^pattern))
+    dynamic([c, ...], ilike(c.oracle_text, ^pattern))
   end
 
-  defp apply_node({:cmp, :mana_value, :<=, value}, query) do
-    where(query, [c], c.mana_value <= ^value)
+  defp node_dynamic({:cmp, :mana_value, :<=, value}) do
+    dynamic([c, ...], c.mana_value <= ^value)
   end
 
-  defp apply_node({:cmp, :mana_value, :>=, value}, query) do
-    where(query, [c], c.mana_value >= ^value)
+  defp node_dynamic({:cmp, :mana_value, :>=, value}) do
+    dynamic([c, ...], c.mana_value >= ^value)
   end
 
-  defp apply_node({:cmp, :mana_value, :==, value}, query) do
-    where(query, [c], c.mana_value == ^value)
+  defp node_dynamic({:cmp, :mana_value, :==, value}) do
+    dynamic([c, ...], c.mana_value == ^value)
   end
 
-  defp apply_node({:cmp, :mana_value, :<, value}, query) do
-    where(query, [c], c.mana_value < ^value)
+  defp node_dynamic({:cmp, :mana_value, :<, value}) do
+    dynamic([c, ...], c.mana_value < ^value)
   end
 
-  defp apply_node({:cmp, :mana_value, :>, value}, query) do
-    where(query, [c], c.mana_value > ^value)
+  defp node_dynamic({:cmp, :mana_value, :>, value}) do
+    dynamic([c, ...], c.mana_value > ^value)
   end
 
-  defp apply_node({:flag, :legendary}, query) do
-    where(query, [c], c.is_legendary == true)
+  defp node_dynamic({:flag, :legendary}) do
+    dynamic([c, ...], c.is_legendary == true)
   end
 end
