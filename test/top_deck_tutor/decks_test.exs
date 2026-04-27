@@ -384,6 +384,176 @@ defmodule TopDeckTutor.DecksTest do
         assert Enum.map(results, & &1.card.id) |> Enum.sort() == expected_ids
       end
     end
+
+    test "supports rarity and set filters within a deck" do
+      deck = deck_fixture()
+      other_deck = deck_fixture()
+
+      rare_match =
+        card_fixture(%{
+          name: "Deck Rare Match",
+          normalized_name: "deck rare match",
+          rarity: "rare",
+          set_code: "m19"
+        })
+
+      mythic_match =
+        card_fixture(%{
+          name: "Deck Mythic Match",
+          normalized_name: "deck mythic match",
+          rarity: "mythic",
+          set_code: "mh3"
+        })
+
+      other_deck_match =
+        card_fixture(%{
+          name: "Other Deck Rare",
+          normalized_name: "other deck rare",
+          rarity: "rare",
+          set_code: "m19"
+        })
+
+      {:ok, _} = Decks.add_card(deck, rare_match)
+      {:ok, _} = Decks.add_card(deck, mythic_match)
+      {:ok, _} = Decks.add_card(other_deck, other_deck_match)
+
+      assert {:ok, rare_results} = Decks.search_query_in_deck(deck, "rarity:rare")
+      assert Enum.map(rare_results, & &1.card.id) == [rare_match.id]
+
+      assert {:ok, mythic_results} = Decks.search_query_in_deck(deck, "rarity:mythic")
+      assert Enum.map(mythic_results, & &1.card.id) == [mythic_match.id]
+
+      assert {:ok, m19_results} = Decks.search_query_in_deck(deck, "set:m19")
+      assert Enum.map(m19_results, & &1.card.id) == [rare_match.id]
+
+      assert {:ok, mh3_results} = Decks.search_query_in_deck(deck, "set:mh3")
+      assert Enum.map(mh3_results, & &1.card.id) == [mythic_match.id]
+    end
+
+    test "supports legality filters within a deck" do
+      deck = deck_fixture()
+      other_deck = deck_fixture()
+
+      commander_match =
+        card_fixture(%{
+          name: "Deck Commander Legal",
+          normalized_name: "deck commander legal",
+          legalities: %{"commander" => "legal"}
+        })
+
+      modern_match =
+        card_fixture(%{
+          name: "Deck Modern Legal",
+          normalized_name: "deck modern legal",
+          legalities: %{"modern" => "legal"}
+        })
+
+      legacy_banned_match =
+        card_fixture(%{
+          name: "Deck Legacy Banned",
+          normalized_name: "deck legacy banned",
+          legalities: %{"legacy" => "banned"}
+        })
+
+      vintage_restricted_match =
+        card_fixture(%{
+          name: "Deck Vintage Restricted",
+          normalized_name: "deck vintage restricted",
+          legalities: %{"vintage" => "restricted"}
+        })
+
+      other_deck_card =
+        card_fixture(%{
+          name: "Other Deck Commander Legal",
+          normalized_name: "other deck commander legal",
+          legalities: %{"commander" => "legal"}
+        })
+
+      {:ok, _} = Decks.add_card(deck, commander_match)
+      {:ok, _} = Decks.add_card(deck, modern_match)
+      {:ok, _} = Decks.add_card(deck, legacy_banned_match)
+      {:ok, _} = Decks.add_card(deck, vintage_restricted_match)
+      {:ok, _} = Decks.add_card(other_deck, other_deck_card)
+
+      assert {:ok, commander_results} = Decks.search_query_in_deck(deck, "legal:commander")
+      assert Enum.map(commander_results, & &1.card.id) == [commander_match.id]
+
+      assert {:ok, modern_results} = Decks.search_query_in_deck(deck, "legal:modern")
+      assert Enum.map(modern_results, & &1.card.id) == [modern_match.id]
+
+      assert {:ok, banned_results} = Decks.search_query_in_deck(deck, "banned:legacy")
+      assert Enum.map(banned_results, & &1.card.id) == [legacy_banned_match.id]
+
+      assert {:ok, restricted_results} = Decks.search_query_in_deck(deck, "restricted:vintage")
+      assert Enum.map(restricted_results, & &1.card.id) == [vintage_restricted_match.id]
+    end
+
+    test "supports color filters within a deck and keeps color distinct from color identity" do
+      deck = deck_fixture()
+      other_deck = deck_fixture()
+
+      color_match =
+        card_fixture(%{
+          name: "Deck Color Match",
+          normalized_name: "deck color match",
+          colors: ["W", "U"],
+          color_identity: ["W", "U"]
+        })
+
+      white_match =
+        card_fixture(%{
+          name: "Deck White Match",
+          normalized_name: "deck white match",
+          colors: ["W"],
+          color_identity: ["W"]
+        })
+
+      colorless_match =
+        card_fixture(%{
+          name: "Deck Colorless Match",
+          normalized_name: "deck colorless match",
+          colors: [],
+          color_identity: []
+        })
+
+      color_identity_only =
+        card_fixture(%{
+          name: "Deck Identity Only",
+          normalized_name: "deck identity only",
+          colors: [],
+          color_identity: ["G"]
+        })
+
+      other_deck_card =
+        card_fixture(%{
+          name: "Other Deck White Match",
+          normalized_name: "other deck white match",
+          colors: ["W"],
+          color_identity: ["W"]
+        })
+
+      {:ok, _} = Decks.add_card(deck, color_match)
+      {:ok, _} = Decks.add_card(deck, white_match)
+      {:ok, _} = Decks.add_card(deck, colorless_match)
+      {:ok, _} = Decks.add_card(deck, color_identity_only)
+      {:ok, _} = Decks.add_card(other_deck, other_deck_card)
+
+      assert {:ok, white_results} = Decks.search_query_in_deck(deck, "color:w")
+
+      assert Enum.map(white_results, & &1.card.id) |> Enum.sort() ==
+               Enum.sort([color_match.id, white_match.id])
+
+      assert {:ok, azorius_results} = Decks.search_query_in_deck(deck, "color:wu")
+      assert Enum.map(azorius_results, & &1.card.id) == [color_match.id]
+
+      assert {:ok, colorless_results} = Decks.search_query_in_deck(deck, "color:c")
+
+      assert Enum.map(colorless_results, & &1.card.id) |> Enum.sort() ==
+               Enum.sort([colorless_match.id, color_identity_only.id])
+
+      assert {:ok, ci_results} = Decks.search_query_in_deck(deck, "ci:g")
+      assert Enum.map(ci_results, & &1.card.id) == [color_identity_only.id]
+    end
   end
 
   defp color_combinations(colors) do

@@ -228,6 +228,143 @@ defmodule TopDeckTutor.CardsTest do
         assert Enum.map(results, & &1.id) |> Enum.sort() == expected_ids
       end
     end
+
+    test "search_query/1 supports rarity and set filters" do
+      rare_match =
+        card_fixture(%{
+          name: "Rare Match",
+          normalized_name: "rare match",
+          rarity: "rare",
+          set_code: "m19"
+        })
+
+      mythic_match =
+        card_fixture(%{
+          name: "Mythic Match",
+          normalized_name: "mythic match",
+          rarity: "mythic",
+          set_code: "mh3"
+        })
+
+      _other =
+        card_fixture(%{
+          name: "Other Card",
+          normalized_name: "other card",
+          rarity: "common",
+          set_code: "neo"
+        })
+
+      assert {:ok, rare_results} = Cards.search_query("rarity:rare")
+      assert Enum.map(rare_results, & &1.id) == [rare_match.id]
+
+      assert {:ok, mythic_results} = Cards.search_query("rarity:mythic")
+      assert Enum.map(mythic_results, & &1.id) == [mythic_match.id]
+
+      assert {:ok, m19_results} = Cards.search_query("set:m19")
+      assert Enum.map(m19_results, & &1.id) == [rare_match.id]
+
+      assert {:ok, mh3_results} = Cards.search_query("set:mh3")
+      assert Enum.map(mh3_results, & &1.id) == [mythic_match.id]
+    end
+
+    test "search_query/1 supports legality filters" do
+      commander_match =
+        card_fixture(%{
+          name: "Commander Legal",
+          normalized_name: "commander legal",
+          legalities: %{"commander" => "legal"}
+        })
+
+      modern_match =
+        card_fixture(%{
+          name: "Modern Legal",
+          normalized_name: "modern legal",
+          legalities: %{"modern" => "legal"}
+        })
+
+      legacy_banned_match =
+        card_fixture(%{
+          name: "Legacy Banned",
+          normalized_name: "legacy banned",
+          legalities: %{"legacy" => "banned"}
+        })
+
+      vintage_restricted_match =
+        card_fixture(%{
+          name: "Vintage Restricted",
+          normalized_name: "vintage restricted",
+          legalities: %{"vintage" => "restricted"}
+        })
+
+      _other =
+        card_fixture(%{
+          name: "Legality Other",
+          normalized_name: "legality other",
+          legalities: %{"commander" => "not_legal", "legacy" => "legal", "vintage" => "legal"}
+        })
+
+      assert {:ok, commander_results} = Cards.search_query("legal:commander")
+      assert Enum.map(commander_results, & &1.id) == [commander_match.id]
+
+      assert {:ok, modern_results} = Cards.search_query("legal:modern")
+      assert Enum.map(modern_results, & &1.id) == [modern_match.id]
+
+      assert {:ok, banned_results} = Cards.search_query("banned:legacy")
+      assert Enum.map(banned_results, & &1.id) == [legacy_banned_match.id]
+
+      assert {:ok, restricted_results} = Cards.search_query("restricted:vintage")
+      assert Enum.map(restricted_results, & &1.id) == [vintage_restricted_match.id]
+    end
+
+    test "search_query/1 supports color filters and keeps color distinct from color identity" do
+      color_match =
+        card_fixture(%{
+          name: "Color Match",
+          normalized_name: "color match",
+          colors: ["W", "U"],
+          color_identity: ["W", "U"]
+        })
+
+      colorless_match =
+        card_fixture(%{
+          name: "Colorless Match",
+          normalized_name: "colorless match",
+          colors: [],
+          color_identity: []
+        })
+
+      color_identity_only =
+        card_fixture(%{
+          name: "Identity Only",
+          normalized_name: "identity only",
+          colors: [],
+          color_identity: ["G"]
+        })
+
+      white_match =
+        card_fixture(%{
+          name: "Other Color",
+          normalized_name: "other color",
+          colors: ["W"],
+          color_identity: ["W"]
+        })
+
+      assert {:ok, white_results} = Cards.search_query("color:w")
+
+      assert Enum.map(white_results, & &1.id) |> Enum.sort() ==
+               Enum.sort([color_match.id, white_match.id])
+
+      assert {:ok, azorius_results} = Cards.search_query("color:wu")
+      assert Enum.map(azorius_results, & &1.id) == [color_match.id]
+
+      assert {:ok, colorless_results} = Cards.search_query("color:c")
+
+      assert Enum.map(colorless_results, & &1.id) |> Enum.sort() ==
+               Enum.sort([colorless_match.id, color_identity_only.id])
+
+      assert {:ok, ci_results} = Cards.search_query("ci:g")
+      assert Enum.map(ci_results, & &1.id) == [color_identity_only.id]
+    end
   end
 
   describe "create_card/1" do

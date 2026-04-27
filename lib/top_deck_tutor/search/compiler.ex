@@ -30,6 +30,14 @@ defmodule TopDeckTutor.Search.Compiler do
     dynamic([c, ...], ilike(c.type_line, ^pattern))
   end
 
+  defp node_dynamic({:field_eq, :rarity, value}) do
+    dynamic([c, ...], c.rarity == ^value)
+  end
+
+  defp node_dynamic({:field_eq, :set_code, value}) do
+    dynamic([c, ...], c.set_code == ^value)
+  end
+
   defp node_dynamic({:field_contains, :name, value}) do
     pattern = "%#{value}%"
     dynamic([c, ...], ilike(c.name, ^pattern))
@@ -42,6 +50,18 @@ defmodule TopDeckTutor.Search.Compiler do
 
   defp node_dynamic({:color_identity, colors}) do
     dynamic([c, ...], fragment("? @> ?", c.color_identity, type(^colors, {:array, :string})))
+  end
+
+  defp node_dynamic({:color, []}) do
+    dynamic([c, ...], c.colors == ^[])
+  end
+
+  defp node_dynamic({:color, colors}) do
+    dynamic([c, ...], fragment("? @> ?", c.colors, type(^colors, {:array, :string})))
+  end
+
+  defp node_dynamic({:legality, format, status}) do
+    dynamic([c, ...], fragment("? ->> ? = ?", c.legalities, ^format, ^status))
   end
 
   defp node_dynamic({:cmp, :mana_value, :<=, value}) do

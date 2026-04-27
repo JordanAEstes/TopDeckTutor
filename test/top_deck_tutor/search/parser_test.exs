@@ -13,6 +13,22 @@ defmodule TopDeckTutor.Search.ParserTest do
     assert {:ok, [{:field_eq, :type, "creature"}]} = Parser.parse(["type:creature"])
   end
 
+  test "parses rarity filters" do
+    assert {:ok, [{:field_eq, :rarity, "rare"}]} = Parser.parse(["rarity:rare"])
+    assert {:ok, [{:field_eq, :rarity, "mythic"}]} = Parser.parse(["rarity:Mythic"])
+  end
+
+  test "parses set filters" do
+    assert {:ok, [{:field_eq, :set_code, "m19"}]} = Parser.parse(["set:m19"])
+    assert {:ok, [{:field_eq, :set_code, "mh3"}]} = Parser.parse(["set:MH3"])
+  end
+
+  test "parses legality filters" do
+    assert {:ok, [{:legality, "commander", "legal"}]} = Parser.parse(["legal:commander"])
+    assert {:ok, [{:legality, "legacy", "banned"}]} = Parser.parse(["banned:Legacy"])
+    assert {:ok, [{:legality, "vintage", "restricted"}]} = Parser.parse(["restricted:vintage"])
+  end
+
   test "parses mana value comparisons" do
     assert {:ok, [{:cmp, :mana_value, :<=, value}]} = Parser.parse(["mv<=3"])
     assert Decimal.equal?(value, Decimal.new("3"))
@@ -34,6 +50,12 @@ defmodule TopDeckTutor.Search.ParserTest do
     assert {:ok, [{:color_identity, ["U", "B", "R"]}]} = Parser.parse(["ci:ubr"])
   end
 
+  test "parses color filters" do
+    assert {:ok, [{:color, ["W"]}]} = Parser.parse(["color:w"])
+    assert {:ok, [{:color, ["W", "U"]}]} = Parser.parse(["color:wu"])
+    assert {:ok, [{:color, []}]} = Parser.parse(["color:c"])
+  end
+
   test "parses every non-empty color identity combination" do
     for colors <- color_combinations(@colors) do
       token = Enum.join(colors)
@@ -47,6 +69,24 @@ defmodule TopDeckTutor.Search.ParserTest do
     assert {:error, "Invalid color identity: x"} = Parser.parse(["ci:x"])
     assert {:error, "Invalid color identity: wx"} = Parser.parse(["ci:wx"])
     assert {:error, "Missing value for ci:"} = Parser.parse(["ci:"])
+  end
+
+  test "errors on invalid color filters" do
+    assert {:error, "Invalid color: x"} = Parser.parse(["color:x"])
+    assert {:error, "Invalid color: wxz"} = Parser.parse(["color:wxz"])
+    assert {:error, "Missing value for color:"} = Parser.parse(["color:"])
+  end
+
+  test "errors on invalid rarity filters" do
+    assert {:error, "Unknown rarity: special"} = Parser.parse(["rarity:special"])
+    assert {:error, "Missing value for rarity:"} = Parser.parse(["rarity:"])
+  end
+
+  test "errors on malformed field equality and legality filters" do
+    assert {:error, "Missing value for set:"} = Parser.parse(["set:"])
+    assert {:error, "Missing value for legal:"} = Parser.parse(["legal:"])
+    assert {:error, "Missing value for banned:"} = Parser.parse(["banned:"])
+    assert {:error, "Missing value for restricted:"} = Parser.parse(["restricted:"])
   end
 
   test "errors on unknown flags" do
