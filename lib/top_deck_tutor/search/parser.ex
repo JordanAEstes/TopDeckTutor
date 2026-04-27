@@ -27,6 +27,9 @@ defmodule TopDeckTutor.Search.Parser do
       String.starts_with?(token, "type:") ->
         parse_type(token)
 
+      String.starts_with?(token, "ci:") ->
+        parse_color_identity(token)
+
       String.starts_with?(token, "is:") ->
         parse_flag(token)
 
@@ -88,6 +91,30 @@ defmodule TopDeckTutor.Search.Parser do
     end
   end
 
+  defp parse_color_identity("ci:"), do: {:error, "Missing value for ci:"}
+
+  defp parse_color_identity(token) do
+    value =
+      token
+      |> String.replace_prefix("ci:", "")
+      |> String.trim()
+      |> String.upcase()
+
+    cond do
+      value == "" ->
+        {:error, "Missing value for ci:"}
+
+      true ->
+        colors = String.graphemes(value)
+
+        if Enum.all?(colors, &valid_color?/1) do
+          {:ok, {:color_identity, colors}}
+        else
+          {:error, "Invalid color identity: #{String.downcase(value)}"}
+        end
+    end
+  end
+
   defp parse_flag("is:"), do: {:error, "Missing value for is:"}
 
   defp parse_flag(token) do
@@ -115,6 +142,13 @@ defmodule TopDeckTutor.Search.Parser do
         {:error, "Invalid mana value comparison: #{token}"}
     end
   end
+
+  defp valid_color?("W"), do: true
+  defp valid_color?("U"), do: true
+  defp valid_color?("B"), do: true
+  defp valid_color?("R"), do: true
+  defp valid_color?("G"), do: true
+  defp valid_color?(_), do: false
 
   defp to_op("<="), do: :<=
   defp to_op(">="), do: :>=

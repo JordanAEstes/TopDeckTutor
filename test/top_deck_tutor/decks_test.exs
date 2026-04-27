@@ -8,6 +8,8 @@ defmodule TopDeckTutor.DecksTest do
   import TopDeckTutor.CardsFixtures
   import TopDeckTutor.DecksFixtures
 
+  @colors ["W", "U", "B", "R", "G"]
+
   describe "list_decks_for_user/1" do
     test "returns only decks owned by the given user" do
       user = user_fixture()
@@ -339,5 +341,72 @@ defmodule TopDeckTutor.DecksTest do
       assert {:ok, results} = Decks.search_query_in_deck(deck, "-name:ajani")
       assert Enum.map(results, & &1.card.id) == [included.id]
     end
+
+    test "supports every non-empty color identity combination within a deck" do
+      deck = deck_fixture()
+      other_deck = deck_fixture()
+
+      cards_by_colors =
+        for colors <- color_combinations(@colors), into: %{} do
+          name = "Deck CI #{Enum.join(colors)}"
+
+          card =
+            card_fixture(%{
+              name: name,
+              normalized_name: String.downcase(name),
+              color_identity: colors
+            })
+
+          {:ok, _} = Decks.add_card(deck, card)
+
+          other_deck_card =
+            card_fixture(%{
+              name: "#{name} Other",
+              normalized_name: String.downcase("#{name} Other"),
+              color_identity: colors
+            })
+
+          {:ok, _} = Decks.add_card(other_deck, other_deck_card)
+
+          {colors, card}
+        end
+
+      for colors <- color_combinations(@colors) do
+        token = colors |> Enum.join() |> String.downcase()
+
+        expected_ids =
+          cards_by_colors
+          |> expected_color_identity_matches(colors)
+          |> Enum.map(& &1.id)
+          |> Enum.sort()
+
+        assert {:ok, results} = Decks.search_query_in_deck(deck, "ci:#{token}")
+        assert Enum.map(results, & &1.card.id) |> Enum.sort() == expected_ids
+      end
+    end
+  end
+
+  defp color_combinations(colors) do
+    1..length(colors)
+    |> Enum.flat_map(&combinations(colors, &1))
+  end
+
+  defp combinations(_colors, 0), do: [[]]
+  defp combinations([], _count), do: []
+
+  defp combinations([head | tail], count) do
+    with_head = Enum.map(combinations(tail, count - 1), &[head | &1])
+    without_head = combinations(tail, count)
+    with_head ++ without_head
+  end
+
+  defp expected_color_identity_matches(cards_by_colors, required_colors) do
+    required_set = MapSet.new(required_colors)
+
+    cards_by_colors
+    |> Enum.filter(fn {colors, _card} ->
+      MapSet.subset?(required_set, MapSet.new(colors))
+    end)
+    |> Enum.map(fn {_colors, card} -> card end)
   end
 end

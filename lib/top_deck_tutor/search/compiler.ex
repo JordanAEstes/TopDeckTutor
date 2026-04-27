@@ -40,6 +40,10 @@ defmodule TopDeckTutor.Search.Compiler do
     dynamic([c, ...], ilike(c.oracle_text, ^pattern))
   end
 
+  defp node_dynamic({:color_identity, colors}) do
+    dynamic([c, ...], fragment("? @> ?", c.color_identity, type(^colors, {:array, :string})))
+  end
+
   defp node_dynamic({:cmp, :mana_value, :<=, value}) do
     dynamic([c, ...], c.mana_value <= ^value)
   end
