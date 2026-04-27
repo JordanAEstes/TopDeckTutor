@@ -554,6 +554,185 @@ defmodule TopDeckTutor.DecksTest do
       assert {:ok, ci_results} = Decks.search_query_in_deck(deck, "ci:g")
       assert Enum.map(ci_results, & &1.card.id) == [color_identity_only.id]
     end
+
+    test "supports game filters within a deck" do
+      deck = deck_fixture()
+      other_deck = deck_fixture()
+
+      paper_match =
+        card_fixture(%{
+          name: "Deck Paper Match",
+          normalized_name: "deck paper match",
+          games: ["paper", "mtgo"]
+        })
+
+      arena_match =
+        card_fixture(%{
+          name: "Deck Arena Match",
+          normalized_name: "deck arena match",
+          games: ["arena"]
+        })
+
+      other_deck_card =
+        card_fixture(%{
+          name: "Other Deck Arena Match",
+          normalized_name: "other deck arena match",
+          games: ["arena"]
+        })
+
+      {:ok, _} = Decks.add_card(deck, paper_match)
+      {:ok, _} = Decks.add_card(deck, arena_match)
+      {:ok, _} = Decks.add_card(other_deck, other_deck_card)
+
+      assert {:ok, paper_results} = Decks.search_query_in_deck(deck, "game:paper")
+      assert Enum.map(paper_results, & &1.card.id) == [paper_match.id]
+
+      assert {:ok, arena_results} = Decks.search_query_in_deck(deck, "game:arena")
+      assert Enum.map(arena_results, & &1.card.id) == [arena_match.id]
+    end
+
+    test "supports keyword filters within a deck" do
+      deck = deck_fixture()
+      other_deck = deck_fixture()
+
+      flying_match =
+        card_fixture(%{
+          name: "Deck Flying Match",
+          normalized_name: "deck flying match",
+          keywords: ["Flying", "Ward"]
+        })
+
+      trample_match =
+        card_fixture(%{
+          name: "Deck Trample Match",
+          normalized_name: "deck trample match",
+          keywords: ["Trample"]
+        })
+
+      other_deck_card =
+        card_fixture(%{
+          name: "Other Deck Flying Match",
+          normalized_name: "other deck flying match",
+          keywords: ["Flying"]
+        })
+
+      {:ok, _} = Decks.add_card(deck, flying_match)
+      {:ok, _} = Decks.add_card(deck, trample_match)
+      {:ok, _} = Decks.add_card(other_deck, other_deck_card)
+
+      assert {:ok, flying_results} = Decks.search_query_in_deck(deck, "keyword:flying")
+      assert Enum.map(flying_results, & &1.card.id) == [flying_match.id]
+
+      assert {:ok, ward_results} = Decks.search_query_in_deck(deck, "keyword:ward")
+      assert Enum.map(ward_results, & &1.card.id) == [flying_match.id]
+
+      assert {:ok, trample_results} = Decks.search_query_in_deck(deck, "keyword:trample")
+      assert Enum.map(trample_results, & &1.card.id) == [trample_match.id]
+    end
+
+    test "supports literal power and toughness comparisons within a deck for numeric values only" do
+      deck = deck_fixture()
+
+      power_three =
+        card_fixture(%{
+          name: "Deck Power Three",
+          normalized_name: "deck power three",
+          power: "3",
+          toughness: "2"
+        })
+
+      power_four =
+        card_fixture(%{
+          name: "Deck Power Four",
+          normalized_name: "deck power four",
+          power: "4",
+          toughness: "4"
+        })
+
+      toughness_two =
+        card_fixture(%{
+          name: "Deck Toughness Two",
+          normalized_name: "deck toughness two",
+          power: "1",
+          toughness: "2"
+        })
+
+      non_numeric =
+        card_fixture(%{
+          name: "Deck Variable Stats",
+          normalized_name: "deck variable stats",
+          power: "1+*",
+          toughness: "*"
+        })
+
+      {:ok, _} = Decks.add_card(deck, power_three)
+      {:ok, _} = Decks.add_card(deck, power_four)
+      {:ok, _} = Decks.add_card(deck, toughness_two)
+      {:ok, _} = Decks.add_card(deck, non_numeric)
+
+      assert {:ok, power_three_results} = Decks.search_query_in_deck(deck, "power=3")
+      assert Enum.map(power_three_results, & &1.card.id) == [power_three.id]
+
+      assert {:ok, power_four_results} = Decks.search_query_in_deck(deck, "power>=4")
+      assert Enum.map(power_four_results, & &1.card.id) == [power_four.id]
+
+      assert {:ok, toughness_two_results} = Decks.search_query_in_deck(deck, "toughness<=2")
+
+      assert Enum.map(toughness_two_results, & &1.card.id) |> Enum.sort() ==
+               Enum.sort([power_three.id, toughness_two.id])
+    end
+
+    test "supports field-to-field power and toughness comparisons within a deck for numeric values only" do
+      deck = deck_fixture()
+
+      power_greater =
+        card_fixture(%{
+          name: "Deck Power Greater",
+          normalized_name: "deck power greater",
+          power: "4",
+          toughness: "2"
+        })
+
+      equal_stats =
+        card_fixture(%{
+          name: "Deck Equal Stats",
+          normalized_name: "deck equal stats",
+          power: "3",
+          toughness: "3"
+        })
+
+      toughness_greater =
+        card_fixture(%{
+          name: "Deck Toughness Greater",
+          normalized_name: "deck toughness greater",
+          power: "1",
+          toughness: "5"
+        })
+
+      non_numeric =
+        card_fixture(%{
+          name: "Deck Star Stats",
+          normalized_name: "deck star stats",
+          power: "*",
+          toughness: "3"
+        })
+
+      {:ok, _} = Decks.add_card(deck, power_greater)
+      {:ok, _} = Decks.add_card(deck, equal_stats)
+      {:ok, _} = Decks.add_card(deck, toughness_greater)
+      {:ok, _} = Decks.add_card(deck, non_numeric)
+
+      assert {:ok, power_greater_results} = Decks.search_query_in_deck(deck, "power>toughness")
+      assert Enum.map(power_greater_results, & &1.card.id) == [power_greater.id]
+
+      assert {:ok, equal_results} = Decks.search_query_in_deck(deck, "power=toughness")
+      assert Enum.map(equal_results, & &1.card.id) == [equal_stats.id]
+
+      assert {:ok, toughness_greater_results} =
+               Decks.search_query_in_deck(deck, "toughness>power")
+
+      assert Enum.map(toughness_greater_results, & &1.card.id) == [toughness_greater.id]
+    end
   end
 
   defp color_combinations(colors) do

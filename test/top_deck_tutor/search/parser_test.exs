@@ -23,6 +23,16 @@ defmodule TopDeckTutor.Search.ParserTest do
     assert {:ok, [{:field_eq, :set_code, "mh3"}]} = Parser.parse(["set:MH3"])
   end
 
+  test "parses game filters" do
+    assert {:ok, [{:game, "paper"}]} = Parser.parse(["game:paper"])
+    assert {:ok, [{:game, "arena"}]} = Parser.parse(["game:Arena"])
+  end
+
+  test "parses keyword filters" do
+    assert {:ok, [{:keyword, "flying"}]} = Parser.parse(["keyword:flying"])
+    assert {:ok, [{:keyword, "ward"}]} = Parser.parse(["keyword:Ward"])
+  end
+
   test "parses legality filters" do
     assert {:ok, [{:legality, "commander", "legal"}]} = Parser.parse(["legal:commander"])
     assert {:ok, [{:legality, "legacy", "banned"}]} = Parser.parse(["banned:Legacy"])
@@ -32,6 +42,18 @@ defmodule TopDeckTutor.Search.ParserTest do
   test "parses mana value comparisons" do
     assert {:ok, [{:cmp, :mana_value, :<=, value}]} = Parser.parse(["mv<=3"])
     assert Decimal.equal?(value, Decimal.new("3"))
+  end
+
+  test "parses power and toughness literal comparisons" do
+    assert {:ok, [{:cmp, :power, :==, 3}]} = Parser.parse(["power=3"])
+    assert {:ok, [{:cmp, :power, :>=, 4}]} = Parser.parse(["power>=4"])
+    assert {:ok, [{:cmp, :toughness, :<=, 2}]} = Parser.parse(["toughness<=2"])
+  end
+
+  test "parses power and toughness field comparisons" do
+    assert {:ok, [{:field_cmp, :power, :>, :toughness}]} = Parser.parse(["power>toughness"])
+    assert {:ok, [{:field_cmp, :power, :==, :toughness}]} = Parser.parse(["power=toughness"])
+    assert {:ok, [{:field_cmp, :toughness, :>, :power}]} = Parser.parse(["toughness>power"])
   end
 
   test "parses flags" do
@@ -87,6 +109,22 @@ defmodule TopDeckTutor.Search.ParserTest do
     assert {:error, "Missing value for legal:"} = Parser.parse(["legal:"])
     assert {:error, "Missing value for banned:"} = Parser.parse(["banned:"])
     assert {:error, "Missing value for restricted:"} = Parser.parse(["restricted:"])
+  end
+
+  test "errors on malformed game filters" do
+    assert {:error, "Missing value for game:"} = Parser.parse(["game:"])
+  end
+
+  test "errors on malformed keyword filters" do
+    assert {:error, "Missing value for keyword:"} = Parser.parse(["keyword:"])
+  end
+
+  test "errors on malformed power and toughness expressions" do
+    assert {:error, "Invalid power/toughness comparison: power>"} = Parser.parse(["power>"])
+    assert {:error, "Invalid power/toughness comparison: power>foo"} = Parser.parse(["power>foo"])
+
+    assert {:error, "Invalid power/toughness comparison: power>>toughness"} =
+             Parser.parse(["power>>toughness"])
   end
 
   test "errors on unknown flags" do

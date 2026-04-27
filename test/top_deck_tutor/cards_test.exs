@@ -365,6 +365,167 @@ defmodule TopDeckTutor.CardsTest do
       assert {:ok, ci_results} = Cards.search_query("ci:g")
       assert Enum.map(ci_results, & &1.id) == [color_identity_only.id]
     end
+
+    test "search_query/1 supports game filters" do
+      paper_match =
+        card_fixture(%{
+          name: "Paper Match",
+          normalized_name: "paper match",
+          games: ["paper", "mtgo"]
+        })
+
+      arena_match =
+        card_fixture(%{
+          name: "Arena Match",
+          normalized_name: "arena match",
+          games: ["arena"]
+        })
+
+      _other =
+        card_fixture(%{
+          name: "No Paper",
+          normalized_name: "no paper",
+          games: ["mtgo"]
+        })
+
+      assert {:ok, paper_results} = Cards.search_query("game:paper")
+      assert Enum.map(paper_results, & &1.id) == [paper_match.id]
+
+      assert {:ok, arena_results} = Cards.search_query("game:arena")
+      assert Enum.map(arena_results, & &1.id) |> Enum.sort() == Enum.sort([arena_match.id])
+    end
+
+    test "search_query/1 supports keyword filters" do
+      flying_match =
+        card_fixture(%{
+          name: "Flying Match",
+          normalized_name: "flying match",
+          keywords: ["Flying", "Ward"]
+        })
+
+      trample_match =
+        card_fixture(%{
+          name: "Trample Match",
+          normalized_name: "trample match",
+          keywords: ["Trample"]
+        })
+
+      _other =
+        card_fixture(%{
+          name: "Keyword Other",
+          normalized_name: "keyword other",
+          keywords: ["Haste"]
+        })
+
+      assert {:ok, flying_results} = Cards.search_query("keyword:flying")
+      assert Enum.map(flying_results, & &1.id) == [flying_match.id]
+
+      assert {:ok, ward_results} = Cards.search_query("keyword:ward")
+      assert Enum.map(ward_results, & &1.id) == [flying_match.id]
+
+      assert {:ok, trample_results} = Cards.search_query("keyword:trample")
+      assert Enum.map(trample_results, & &1.id) == [trample_match.id]
+    end
+
+    test "search_query/1 supports literal power and toughness comparisons for numeric values only" do
+      power_three =
+        card_fixture(%{
+          name: "Power Three",
+          normalized_name: "power three",
+          power: "3",
+          toughness: "2"
+        })
+
+      power_four =
+        card_fixture(%{
+          name: "Power Four",
+          normalized_name: "power four",
+          power: "4",
+          toughness: "4"
+        })
+
+      toughness_two =
+        card_fixture(%{
+          name: "Toughness Two",
+          normalized_name: "toughness two",
+          power: "1",
+          toughness: "2"
+        })
+
+      _non_numeric =
+        card_fixture(%{
+          name: "Variable Stats",
+          normalized_name: "variable stats",
+          power: "1+*",
+          toughness: "*"
+        })
+
+      _nil_stats =
+        card_fixture(%{
+          name: "No Stats",
+          normalized_name: "no stats"
+        })
+
+      assert {:ok, power_three_results} = Cards.search_query("power=3")
+      assert Enum.map(power_three_results, & &1.id) == [power_three.id]
+
+      assert {:ok, power_four_results} = Cards.search_query("power>=4")
+      assert Enum.map(power_four_results, & &1.id) == [power_four.id]
+
+      assert {:ok, toughness_two_results} = Cards.search_query("toughness<=2")
+
+      assert Enum.map(toughness_two_results, & &1.id) |> Enum.sort() ==
+               Enum.sort([power_three.id, toughness_two.id])
+    end
+
+    test "search_query/1 supports field-to-field power and toughness comparisons for numeric values only" do
+      power_greater =
+        card_fixture(%{
+          name: "Power Greater",
+          normalized_name: "power greater",
+          power: "4",
+          toughness: "2"
+        })
+
+      equal_stats =
+        card_fixture(%{
+          name: "Equal Stats",
+          normalized_name: "equal stats",
+          power: "3",
+          toughness: "3"
+        })
+
+      toughness_greater =
+        card_fixture(%{
+          name: "Toughness Greater",
+          normalized_name: "toughness greater",
+          power: "1",
+          toughness: "5"
+        })
+
+      _non_numeric =
+        card_fixture(%{
+          name: "Star Stats",
+          normalized_name: "star stats",
+          power: "*",
+          toughness: "3"
+        })
+
+      _nil_stats =
+        card_fixture(%{
+          name: "No Field Stats",
+          normalized_name: "no field stats"
+        })
+
+      assert {:ok, power_greater_results} = Cards.search_query("power>toughness")
+      assert Enum.map(power_greater_results, & &1.id) == [power_greater.id]
+
+      assert {:ok, equal_results} = Cards.search_query("power=toughness")
+      assert Enum.map(equal_results, & &1.id) == [equal_stats.id]
+
+      assert {:ok, toughness_greater_results} = Cards.search_query("toughness>power")
+      assert Enum.map(toughness_greater_results, & &1.id) == [toughness_greater.id]
+    end
   end
 
   describe "create_card/1" do
