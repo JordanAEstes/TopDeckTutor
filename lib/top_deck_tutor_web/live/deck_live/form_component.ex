@@ -3,6 +3,30 @@ defmodule TopDeckTutorWeb.DeckLive.FormComponent do
 
   alias TopDeckTutor.Decks
 
+  @format_options [
+    "duel",
+    "brawl",
+    "penny",
+    "predh",
+    "future",
+    "legacy",
+    "modern",
+    "pauper",
+    "alchemy",
+    "pioneer",
+    "vintage",
+    "historic",
+    "standard",
+    "timeless",
+    "commander",
+    "gladiator",
+    "oldschool",
+    "premodern",
+    "oathbreaker",
+    "standardbrawl",
+    "paupercommander"
+  ]
+
   @impl true
   def update(%{deck: deck} = assigns, socket) do
     changeset = Decks.change_deck(deck)
@@ -10,7 +34,8 @@ defmodule TopDeckTutorWeb.DeckLive.FormComponent do
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:form, to_form(changeset))}
+     |> assign(:form, to_form(changeset))
+     |> assign(:format_options, format_options(@format_options))}
   end
 
   @impl true
@@ -59,4 +84,7 @@ defmodule TopDeckTutorWeb.DeckLive.FormComponent do
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
+
+  defp format_options(formats),
+    do: Enum.map(formats, fn format -> {String.capitalize(format), format} end)
 end
