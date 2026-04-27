@@ -1,0 +1,226 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="relative isolate overflow-hidden">
+    <%= if background_image = background_image_uri(@card) do %>
+      <div
+        class="pointer-events-none absolute inset-0 z-0 scale-105 bg-cover bg-center opacity-35 blur-sm"
+        style={"background-image: url('#{background_image}')"}
+      >
+      </div>
+
+      <div class="pointer-events-none absolute inset-0 z-0 bg-[rgba(247,244,236,0.76)]"></div>
+    <% end %>
+
+    <div class="relative z-10 mx-auto max-w-7xl px-4 py-8">
+      <div class="mb-6 flex items-center justify-between gap-4">
+        <div class="space-y-1">
+          <p class="text-sm font-medium uppercase tracking-[0.16em] app-muted">
+            Card
+          </p>
+          <h1 class="text-3xl font-semibold tracking-tight">{@card.name}</h1>
+        </div>
+
+        <div class="flex gap-2">
+          <.link navigate={~p"/search"} class="app-button-secondary">
+            Back to search
+          </.link>
+        </div>
+      </div>
+
+      <div class="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)_340px]">
+        <section class="space-y-4">
+          <div class="app-panel overflow-hidden p-4">
+            <%= if image = @card.image_uris["normal"] do %>
+              <img
+                src={image}
+                alt={@card.name}
+                class="w-full rounded-2xl shadow-lg"
+              />
+            <% else %>
+              <div class="flex aspect-[5/7] items-center justify-center rounded-2xl bg-zinc-100 text-sm app-muted">
+                No image available
+              </div>
+            <% end %>
+          </div>
+
+          <%= if @current_scope do %>
+            <div class="app-panel p-4">
+              <h2 class="mb-3 text-lg font-medium">Actions</h2>
+
+              <div class="flex flex-wrap gap-2">
+                <.link navigate={~p"/search?q=name:#{@card.name}"} class="app-button-secondary">
+                  Search similar
+                </.link>
+
+                <.link navigate={~p"/decks"} class="app-button-primary">
+                  Add to deck
+                </.link>
+              </div>
+            </div>
+          <% end %>
+        </section>
+
+        <section class="app-panel overflow-hidden">
+          <div class="border-b px-5 py-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h2 class="truncate text-2xl font-semibold">{@card.name}</h2>
+              </div>
+
+              <%= if @card.mana_cost not in [nil, ""] do %>
+                <div class="shrink-0 text-xl font-medium">
+                  {@card.mana_cost}
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="border-b px-5 py-4">
+            <div class="text-xl font-medium">
+              {@card.type_line}
+            </div>
+          </div>
+
+          <div class="space-y-5 px-5 py-5">
+            <%= if @card.oracle_text not in [nil, ""] do %>
+              <div class="whitespace-pre-line text-lg leading-8">
+                {@card.oracle_text}
+              </div>
+            <% end %>
+
+            <%= if @card.power || @card.toughness || @card.loyalty do %>
+              <div class="border-t pt-4 text-lg">
+                <%= if @card.power && @card.toughness do %>
+                  <div>
+                    <span class="font-medium">Power/Toughness:</span>
+                    {@card.power}/{@card.toughness}
+                  </div>
+                <% end %>
+
+                <%= if @card.loyalty do %>
+                  <div>
+                    <span class="font-medium">Loyalty:</span>
+                    {@card.loyalty}
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <div class="border-t pt-4">
+              <div class="text-sm app-muted">
+                Illustrated by
+                <span class="font-medium text-[var(--text)]">
+                  {@card.artist || "Unknown artist"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t px-5 py-5">
+            <h3 class="mb-4 text-lg font-medium">Legalities</h3>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <%= for {format, status} <- legality_rows(@card.legalities) do %>
+                <div class="flex items-center justify-between gap-3">
+                  <span class={[
+                    "inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
+                    legality_class(status)
+                  ]}>
+                    {legality_label(status)}
+                  </span>
+
+                  <span class="text-base font-medium">
+                    {Phoenix.Naming.humanize(format)}
+                  </span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </section>
+
+        <aside class="space-y-5">
+          <section class="app-panel overflow-hidden">
+            <div class="border-b bg-[var(--surface-dark)] px-4 py-3 text-[var(--text-inverse)]">
+              <div class="text-xl font-semibold">
+                {@card.set_name}
+                <span class="uppercase">({@card.set_code})</span>
+              </div>
+              <div class="mt-1 text-sm text-zinc-200">
+                ##{@card.collector_number} · {Phoenix.Naming.humanize(@card.rarity)} · {@card.lang
+                |> String.upcase()} · {finish_text(@card)}
+              </div>
+            </div>
+
+            <div class="space-y-3 px-4 py-4">
+              <div>
+                <div class="text-xs font-medium uppercase tracking-wide app-muted">Released</div>
+                <div class="mt-1 text-sm">{@card.released_at || "Unknown"}</div>
+              </div>
+
+              <div>
+                <div class="text-xs font-medium uppercase tracking-wide app-muted">Layout</div>
+                <div class="mt-1 text-sm">{@card.layout || "Unknown"}</div>
+              </div>
+
+              <div>
+                <div class="text-xs font-medium uppercase tracking-wide app-muted">
+                  Color Identity
+                </div>
+                <div class="mt-1 text-sm">
+                  <%= if @card.color_identity == [] do %>
+                    Colorless
+                  <% else %>
+                    {Enum.join(@card.color_identity, ", ")}
+                  <% end %>
+                </div>
+              </div>
+
+              <div>
+                <div class="text-xs font-medium uppercase tracking-wide app-muted">
+                  Mana Value
+                </div>
+                <div class="mt-1 text-sm">{@card.mana_value}</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="app-panel overflow-hidden">
+            <div class="border-b bg-[var(--surface-dark)] px-4 py-3 text-lg font-semibold text-[var(--text-inverse)]">
+              Search shortcuts
+            </div>
+
+            <div class="space-y-2 px-4 py-4 text-sm">
+              <.link
+                navigate={~p"/search?#{[q: "name:#{@card.name}"]}"}
+                class="block hover:underline"
+              >
+                Search this name
+              </.link>
+
+              <%= if @card.type_line not in [nil, ""] do %>
+                <.link
+                  navigate={
+                    ~p"/search?#{[q: "type:#{List.first(String.split(@card.type_line, " "))}"]}"
+                  }
+                  class="block hover:underline"
+                >
+                  Search similar type
+                </.link>
+              <% end %>
+
+              <%= if @card.oracle_text not in [nil, ""] do %>
+                <.link
+                  navigate={
+                    ~p"/search?#{[q: ~s(text:"#{String.slice(@card.oracle_text, 0, 20)}")]}"
+                  }
+                  class="block hover:underline"
+                >
+                  Search oracle text
+                </.link>
+              <% end %>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

@@ -7,20 +7,38 @@
     phx-submit="save"
     class="space-y-6"
   >
-    <.input field={@form[:name]} type="text" label="Name" />
-    <.input field={@form[:format]} type="text" label="Format" />
+    <.input
+      field={@form[:name]}
+      type="text"
+      label="Name"
+      class="app-input"
+    />
+
+    <.input
+      field={@form[:format]}
+      type="select"
+      label="Format"
+      options={@format_options}
+      class="app-input"
+    />
 
     <.input
       field={@form[:visibility]}
       type="select"
       label="Visibility"
       options={[{"Private", "private"}, {"Unlisted", "unlisted"}, {"Public", "public"}]}
+      class="app-input"
     />
 
-    <.input field={@form[:description]} type="textarea" label="Description" />
+    <.input
+      field={@form[:description]}
+      type="textarea"
+      label="Description"
+      class="app-input"
+    />
 
     <div class="flex justify-end">
-      <.button>Save deck</.button>
+      <.button class="app-button-primary">Save deck</.button>
     </div>
   </.form>
 </div>

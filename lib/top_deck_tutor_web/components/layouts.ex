@@ -31,25 +31,30 @@ defmodule TopDeckTutorWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <div class="min-h-screen flex flex-col bg-white text-zinc-900">
-      <header class="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">
-        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+    <div class="app-shell flex min-h-screen flex-col">
+      <header class="app-header sticky top-0 z-40 backdrop-blur">
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-2">
           <div class="flex items-center gap-6">
-            <.link navigate={~p"/"} class="text-lg font-semibold tracking-tight">
-              TopDeckTutor
+            <.link navigate={~p"/"} class="inline-flex items-center gap-3">
+              <img
+                src={~p"/images/nav-logo.png"}
+                alt="Top Deck Tutor"
+                class="size-14"
+              />
+              <span class="text-lg font-semibold tracking-tight">TopDeckTutor</span>
             </.link>
 
-            <nav class="hidden md:flex items-center gap-4 text-sm">
-              <.link navigate={~p"/search"} class="hover:text-zinc-900 hover:underline">
+            <nav class="hidden items-center gap-4 md:flex">
+              <.link navigate={~p"/search"} class="app-link-nav">
                 Global Search
               </.link>
 
-              <.link navigate={~p"/syntax"} class="hover:text-zinc-900 hover:underline">
+              <.link navigate={~p"/syntax"} class="app-link-nav">
                 Syntax Guide
               </.link>
 
               <%= if @current_scope do %>
-                <.link navigate={~p"/decks"} class="hover:text-zinc-900 hover:underline">
+                <.link navigate={~p"/decks"} class="app-link-nav">
                   My Decks
                 </.link>
               <% end %>
@@ -58,36 +63,27 @@ defmodule TopDeckTutorWeb.Layouts do
 
           <div class="flex items-center gap-3 text-sm">
             <%= if @current_scope do %>
-              <span class="hidden sm:inline text-zinc-500">
+              <span class="hidden sm:inline text-zinc-300">
                 {@current_scope.user.email}
               </span>
 
-              <.link
-                navigate={~p"/users/settings"}
-                class="hover:text-zinc-900 hover:underline"
-              >
+              <.link navigate={~p"/users/settings"} class="app-link-nav">
                 Settings
               </.link>
 
               <.link
                 href={~p"/users/log-out"}
                 method="delete"
-                class="rounded-md border px-3 py-2 font-medium transition hover:bg-zinc-50"
+                class="app-button-secondary"
               >
                 Log out
               </.link>
             <% else %>
-              <.link
-                navigate={~p"/users/register"}
-                class="hover:text-zinc-900 hover:underline"
-              >
+              <.link navigate={~p"/users/register"} class="app-link-nav">
                 Register
               </.link>
 
-              <.link
-                navigate={~p"/users/log-in"}
-                class="rounded-md bg-zinc-900 px-3 py-2 font-medium text-white transition hover:bg-zinc-700"
-              >
+              <.link navigate={~p"/users/log-in"} class="app-button-primary">
                 Log in
               </.link>
             <% end %>
@@ -95,15 +91,18 @@ defmodule TopDeckTutorWeb.Layouts do
         </div>
       </header>
 
-      <.flash_group flash={@flash} />
-
       <main class="flex-1">
+        <.flash_group flash={@flash} />
         {render_slot(@inner_block)}
       </main>
 
-      <footer class="border-t bg-zinc-50">
-        <div class="mx-auto max-w-6xl px-4 py-4 text-sm text-zinc-500">
-          TopDeckTutor
+      <footer class="app-footer">
+        <div class="mx-auto flex h-14 max-w-6xl items-center justify-center px-4 pt-1">
+          <img
+            src={~p"/images/text-logo.png"}
+            alt="Top Deck Tutor"
+            class="h-auto w-40 scale-150"
+          />
         </div>
       </footer>
     </div>

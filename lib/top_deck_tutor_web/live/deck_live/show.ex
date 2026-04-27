@@ -11,20 +11,30 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _url, socket) do
+  def handle_params(%{"id" => id} = params, _url, socket) do
     deck = Decks.get_user_deck_with_entries!(socket.assigns.current_scope.user, id)
+    view_mode = normalize_view_mode(Map.get(params, "view", "details"))
+    entries_by_section = Decks.entries_by_section(deck)
+
+    preview_card =
+      deck.deck_entries
+      |> List.first()
+      |> case do
+        nil -> nil
+        entry -> entry.card
+      end
 
     {:noreply,
      socket
-     |> assign(
-       page_title: page_title(socket.assigns.live_action),
-       deck: deck,
-       entries_by_section: Decks.entries_by_section(deck),
-       search_term: "",
-       search_results: [],
-       selected_section: "mainboard",
-       quantity: 1
-     )}
+     |> assign(:page_title, page_title(socket.assigns.live_action))
+     |> assign(:deck, deck)
+     |> assign(:entries_by_section, entries_by_section)
+     |> assign(:view_mode, view_mode)
+     |> assign(:preview_card, preview_card)
+     |> assign(:search_term, "")
+     |> assign(:search_results, [])
+     |> assign(:selected_section, "mainboard")
+     |> assign(:quantity, 1)}
   end
 
   @impl true
@@ -39,6 +49,19 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
      socket
      |> assign(:search_term, q)
      |> assign(:search_results, results)}
+  end
+
+  @impl true
+  def handle_event("set_view_mode", %{"mode" => mode}, socket) do
+    mode = normalize_view_mode(mode)
+
+    {:noreply, push_patch(socket, to: ~p"/decks/#{socket.assigns.deck}?view=#{mode}")}
+  end
+
+  @impl true
+  def handle_event("preview_card", %{"card_id" => card_id}, socket) do
+    card = TopDeckTutor.Cards.get_card!(card_id)
+    {:noreply, assign(socket, :preview_card, card)}
   end
 
   def handle_event(
@@ -90,4 +113,9 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
 
   defp page_title(:show), do: "Show Deck"
   defp page_title(:edit), do: "Edit Deck"
+
+  defp normalize_view_mode("details"), do: "details"
+  defp normalize_view_mode("images"), do: "images"
+  defp normalize_view_mode("list"), do: "list"
+  defp normalize_view_mode(_), do: "details"
 end
