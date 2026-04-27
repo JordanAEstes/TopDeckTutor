@@ -15,6 +15,9 @@ defmodule TopDeckTutor.Search.Parser do
 
   defp parse_token(token) when is_binary(token) do
     cond do
+      String.starts_with?(token, "-") and token != "-" ->
+        parse_negated(token)
+
       String.starts_with?(token, "name:") ->
         parse_contains_field(token, "name:", :name)
 
@@ -32,6 +35,16 @@ defmodule TopDeckTutor.Search.Parser do
 
       true ->
         {:ok, {:text, token}}
+    end
+  end
+
+  defp parse_negated(token) do
+    token
+    |> String.replace_prefix("-", "")
+    |> parse_token()
+    |> case do
+      {:ok, node} -> {:ok, {:not, node}}
+      {:error, reason} -> {:error, reason}
     end
   end
 

@@ -104,6 +104,99 @@ defmodule TopDeckTutor.CardsTest do
       assert {:ok, results} = Cards.search_query(~s(name:divination text:"Draw two"))
       assert Enum.any?(results, &(&1.id == matching.id))
     end
+
+    test "search_query/1 supports quoted name filters" do
+      matching =
+        card_fixture(%{
+          name: "Sol Ring",
+          normalized_name: "sol ring",
+          oracle_text: "Add two colorless mana."
+        })
+
+      _other =
+        card_fixture(%{
+          name: "Sol Talisman",
+          normalized_name: "sol talisman",
+          oracle_text: "Suspend 3."
+        })
+
+      assert {:ok, results} = Cards.search_query(~s(name:"Sol Ring"))
+      assert Enum.map(results, & &1.id) == [matching.id]
+    end
+
+    test "search_query/1 supports quoted text filters" do
+      matching =
+        card_fixture(%{
+          name: "Divination",
+          normalized_name: "divination",
+          oracle_text: "Draw a card, then draw a card."
+        })
+
+      _other =
+        card_fixture(%{
+          name: "Shock",
+          normalized_name: "shock",
+          oracle_text: "Deal 2 damage to any target."
+        })
+
+      assert {:ok, results} = Cards.search_query(~s(text:"draw a card"))
+      assert Enum.map(results, & &1.id) == [matching.id]
+    end
+
+    test "search_query/1 supports negated type filters" do
+      _excluded =
+        card_fixture(%{
+          name: "Llanowar Elves",
+          normalized_name: "llanowar elves",
+          type_line: "Creature — Elf Druid"
+        })
+
+      included =
+        card_fixture(%{
+          name: "Wrath of God",
+          normalized_name: "wrath of god",
+          type_line: "Sorcery"
+        })
+
+      assert {:ok, results} = Cards.search_query("-type:creature")
+      assert Enum.map(results, & &1.id) == [included.id]
+    end
+
+    test "search_query/1 supports negated text filters" do
+      _excluded =
+        card_fixture(%{
+          name: "Counterspell",
+          normalized_name: "counterspell",
+          oracle_text: "Counter target spell."
+        })
+
+      included =
+        card_fixture(%{
+          name: "Divination",
+          normalized_name: "divination",
+          oracle_text: "Draw two cards."
+        })
+
+      assert {:ok, results} = Cards.search_query("-text:counter")
+      assert Enum.map(results, & &1.id) == [included.id]
+    end
+
+    test "search_query/1 supports negated name filters" do
+      _excluded =
+        card_fixture(%{
+          name: "Ajani, Mentor of Heroes",
+          normalized_name: "ajani mentor of heroes"
+        })
+
+      included =
+        card_fixture(%{
+          name: "Elspeth, Sun's Champion",
+          normalized_name: "elspeth suns champion"
+        })
+
+      assert {:ok, results} = Cards.search_query("-name:ajani")
+      assert Enum.map(results, & &1.id) == [included.id]
+    end
   end
 
   describe "create_card/1" do

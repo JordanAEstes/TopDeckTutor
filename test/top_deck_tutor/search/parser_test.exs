@@ -48,4 +48,23 @@ defmodule TopDeckTutor.Search.ParserTest do
     assert {:ok, [{:field_contains, :oracle_text, "Draw two"}]} =
              Parser.parse([~s(text:"Draw two")])
   end
+
+  test "parses negated type filters" do
+    assert {:ok, [{:not, {:field_eq, :type, "creature"}}]} =
+             Parser.parse(["-type:creature"])
+  end
+
+  test "parses negated text contains filters" do
+    assert {:ok, [{:not, {:field_contains, :oracle_text, "draw a card"}}]} =
+             Parser.parse([~s(-text:"draw a card")])
+  end
+
+  test "parses negated name contains filters" do
+    assert {:ok, [{:not, {:field_contains, :name, "ajani"}}]} =
+             Parser.parse(["-name:ajani"])
+  end
+
+  test "errors on missing negated field value" do
+    assert {:error, "Missing value for type:"} = Parser.parse(["-type:"])
+  end
 end
