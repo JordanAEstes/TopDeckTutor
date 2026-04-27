@@ -33,6 +33,12 @@ defmodule TopDeckTutor.Search.Parser do
       String.starts_with?(token, "set:") ->
         parse_exact_field(token, "set:", :set_code)
 
+      String.starts_with?(token, "game:") ->
+        parse_normalized_node(token, "game:", :game)
+
+      String.starts_with?(token, "keyword:") ->
+        parse_normalized_node(token, "keyword:", :keyword)
+
       String.starts_with?(token, "legal:") ->
         parse_legality(token, "legal:", "legal")
 
@@ -53,6 +59,9 @@ defmodule TopDeckTutor.Search.Parser do
 
       Regex.match?(~r/^mv(<=|>=|<|>|=)-?\d+(\.\d+)?$/, token) ->
         parse_mv(token)
+
+      String.starts_with?(token, "power") or String.starts_with?(token, "toughness") ->
+        parse_power_toughness(token)
 
       true ->
         {:ok, {:text, token}}
@@ -121,6 +130,12 @@ defmodule TopDeckTutor.Search.Parser do
   defp parse_exact_field(token, prefix, field) do
     with {:ok, value} <- normalized_field_value(token, prefix) do
       {:ok, {:field_eq, field, value}}
+    end
+  end
+
+  defp parse_normalized_node(token, prefix, node_type) do
+    with {:ok, value} <- normalized_field_value(token, prefix) do
+      {:ok, {node_type, value}}
     end
   end
 
@@ -229,6 +244,31 @@ defmodule TopDeckTutor.Search.Parser do
     end
   end
 
+  defp parse_power_toughness(token) do
+    case Regex.run(~r/^(power|toughness)(<=|>=|<|>|=)(.+)$/, token) do
+      [_, left, op, right] ->
+        parse_power_toughness_right(token, String.to_atom(left), to_op(op), String.trim(right))
+
+      _ ->
+        {:error, "Invalid power/toughness comparison: #{token}"}
+    end
+  end
+
+  defp parse_power_toughness_right(_token, left, op, right)
+       when right in ["power", "toughness"] do
+    {:ok, {:field_cmp, left, op, String.to_atom(right)}}
+  end
+
+  defp parse_power_toughness_right(_token, left, op, right) do
+    case Integer.parse(right) do
+      {value, ""} ->
+        {:ok, {:cmp, left, op, value}}
+
+      _ ->
+        {:error, "Invalid power/toughness comparison: #{left}#{op_to_string(op)}#{right}"}
+    end
+  end
+
   defp valid_color?("W"), do: true
   defp valid_color?("U"), do: true
   defp valid_color?("B"), do: true
@@ -241,4 +281,10 @@ defmodule TopDeckTutor.Search.Parser do
   defp to_op("<"), do: :<
   defp to_op(">"), do: :>
   defp to_op("="), do: :==
+
+  defp op_to_string(:<=), do: "<="
+  defp op_to_string(:>=), do: ">="
+  defp op_to_string(:<), do: "<"
+  defp op_to_string(:>), do: ">"
+  defp op_to_string(:==), do: "="
 end

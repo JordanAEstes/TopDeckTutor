@@ -38,6 +38,28 @@ defmodule TopDeckTutor.Search.Compiler do
     dynamic([c, ...], c.set_code == ^value)
   end
 
+  defp node_dynamic({:game, value}) do
+    dynamic(
+      [c, ...],
+      fragment(
+        "EXISTS (SELECT 1 FROM unnest(?) AS game WHERE lower(game) = ?)",
+        c.games,
+        ^value
+      )
+    )
+  end
+
+  defp node_dynamic({:keyword, value}) do
+    dynamic(
+      [c, ...],
+      fragment(
+        "EXISTS (SELECT 1 FROM unnest(?) AS keyword WHERE lower(keyword) = ?)",
+        c.keywords,
+        ^value
+      )
+    )
+  end
+
   defp node_dynamic({:field_contains, :name, value}) do
     pattern = "%#{value}%"
     dynamic([c, ...], ilike(c.name, ^pattern))
@@ -84,7 +106,101 @@ defmodule TopDeckTutor.Search.Compiler do
     dynamic([c, ...], c.mana_value > ^value)
   end
 
+  defp node_dynamic({:cmp, field, op, value}) when field in [:power, :toughness] do
+    numeric_stat_dynamic(field, op, value)
+  end
+
+  defp node_dynamic({:field_cmp, left, op, right})
+       when left in [:power, :toughness] and right in [:power, :toughness] do
+    stat_field_dynamic(left, op, right)
+  end
+
   defp node_dynamic({:flag, :legendary}) do
     dynamic([c, ...], c.is_legendary == true)
+  end
+
+  defp numeric_stat_dynamic(field, :<=, value) do
+    dynamic(
+      [c, ...],
+      fragment("? ~ ?", field(c, ^field), "^-?[0-9]+$") and
+        fragment("CAST(? AS INTEGER) <= ?", field(c, ^field), ^value)
+    )
+  end
+
+  defp numeric_stat_dynamic(field, :>=, value) do
+    dynamic(
+      [c, ...],
+      fragment("? ~ ?", field(c, ^field), "^-?[0-9]+$") and
+        fragment("CAST(? AS INTEGER) >= ?", field(c, ^field), ^value)
+    )
+  end
+
+  defp numeric_stat_dynamic(field, :==, value) do
+    dynamic(
+      [c, ...],
+      fragment("? ~ ?", field(c, ^field), "^-?[0-9]+$") and
+        fragment("CAST(? AS INTEGER) = ?", field(c, ^field), ^value)
+    )
+  end
+
+  defp numeric_stat_dynamic(field, :<, value) do
+    dynamic(
+      [c, ...],
+      fragment("? ~ ?", field(c, ^field), "^-?[0-9]+$") and
+        fragment("CAST(? AS INTEGER) < ?", field(c, ^field), ^value)
+    )
+  end
+
+  defp numeric_stat_dynamic(field, :>, value) do
+    dynamic(
+      [c, ...],
+      fragment("? ~ ?", field(c, ^field), "^-?[0-9]+$") and
+        fragment("CAST(? AS INTEGER) > ?", field(c, ^field), ^value)
+    )
+  end
+
+  defp stat_field_dynamic(left, :<=, right) do
+    dynamic(
+      [c, ...],
+      fragment("? ~ ?", field(c, ^left), "^-?[0-9]+$") and
+        fragment("? ~ ?", field(c, ^right), "^-?[0-9]+$") and
+        fragment("CAST(? AS INTEGER) <= CAST(? AS INTEGER)", field(c, ^left), field(c, ^right))
+    )
+  end
+
+  defp stat_field_dynamic(left, :>=, right) do
+    dynamic(
+      [c, ...],
+      fragment("? ~ ?", field(c, ^left), "^-?[0-9]+$") and
+        fragment("? ~ ?", field(c, ^right), "^-?[0-9]+$") and
+        fragment("CAST(? AS INTEGER) >= CAST(? AS INTEGER)", field(c, ^left), field(c, ^right))
+    )
+  end
+
+  defp stat_field_dynamic(left, :==, right) do
+    dynamic(
+      [c, ...],
+      fragment("? ~ ?", field(c, ^left), "^-?[0-9]+$") and
+        fragment("? ~ ?", field(c, ^right), "^-?[0-9]+$") and
+        fragment("CAST(? AS INTEGER) = CAST(? AS INTEGER)", field(c, ^left), field(c, ^right))
+    )
+  end
+
+  defp stat_field_dynamic(left, :<, right) do
+    dynamic(
+      [c, ...],
+      fragment("? ~ ?", field(c, ^left), "^-?[0-9]+$") and
+        fragment("? ~ ?", field(c, ^right), "^-?[0-9]+$") and
+        fragment("CAST(? AS INTEGER) < CAST(? AS INTEGER)", field(c, ^left), field(c, ^right))
+    )
+  end
+
+  defp stat_field_dynamic(left, :>, right) do
+    dynamic(
+      [c, ...],
+      fragment("? ~ ?", field(c, ^left), "^-?[0-9]+$") and
+        fragment("? ~ ?", field(c, ^right), "^-?[0-9]+$") and
+        fragment("CAST(? AS INTEGER) > CAST(? AS INTEGER)", field(c, ^left), field(c, ^right))
+    )
   end
 end
