@@ -32,6 +32,10 @@ defmodule TopDeckTutorWeb.CardLive.Show do
     end
   end
 
+  def background_image_uri(card) do
+    card.image_uris["art_crop"] || card.image_uris["large"] || card.image_uris["normal"]
+  end
+
   def legality_class("legal"), do: "bg-emerald-100 text-emerald-800 border-emerald-200"
   def legality_class("not_legal"), do: "bg-zinc-100 text-zinc-600 border-zinc-200"
   def legality_class("restricted"), do: "bg-amber-100 text-amber-800 border-amber-200"
