@@ -28,7 +28,7 @@
 
       <div class="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)_340px]">
         <section class="space-y-4">
-          <div class="app-panel overflow-hidden p-4">
+          <div class="app-panel overflow-hidden p-4" style={card_frame_style(@card)}>
             <%= if image = @card.image_uris["normal"] do %>
               <img
                 src={image}
