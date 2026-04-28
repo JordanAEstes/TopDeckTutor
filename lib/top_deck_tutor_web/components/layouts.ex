@@ -45,10 +45,6 @@ defmodule TopDeckTutorWeb.Layouts do
             </.link>
 
             <nav class="hidden items-center gap-4 md:flex">
-              <.link navigate={~p"/search"} class="app-link-nav">
-                Global Search
-              </.link>
-
               <.link navigate={~p"/syntax"} class="app-link-nav">
                 Syntax Guide
               </.link>
