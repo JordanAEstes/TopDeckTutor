@@ -316,8 +316,6 @@ defmodule TopDeckTutorWeb.CoreComponents do
   attr :class, :any, default: nil
 
   def mana_text(assigns) do
-    IO.inspect(assigns)
-
     assigns =
       assigns
       |> assign(:parts, mana_text_parts(assigns.text || ""))
