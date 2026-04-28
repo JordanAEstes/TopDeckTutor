@@ -145,6 +145,69 @@ defmodule TopDeckTutor.CardsTest do
       assert Enum.map(results, & &1.id) == [matching.id]
     end
 
+    test "search_query/1 defaults plain text terms to name filters" do
+      matching =
+        card_fixture(%{
+          name: "Divination",
+          normalized_name: "divination",
+          oracle_text: "Look at the top three cards of your library."
+        })
+
+      _oracle_text_only_match =
+        card_fixture(%{
+          name: "Strategic Planning",
+          normalized_name: "strategic planning",
+          oracle_text: "Draw two cards."
+        })
+
+      assert {:ok, results} = Cards.search_query("Divin")
+      assert Enum.map(results, & &1.id) == [matching.id]
+    end
+
+    test "search_ast_page/2 paginates 60 results per page" do
+      for index <- 1..65 do
+        card_fixture(%{
+          name: "Paged Result #{index}",
+          normalized_name: "paged result #{index}"
+        })
+      end
+
+      assert {:ok, ast} = TopDeckTutor.Search.parse("Paged Result")
+
+      page_one = Cards.search_ast_page(ast, page: 1, page_size: 60)
+      page_two = Cards.search_ast_page(ast, page: 2, page_size: 60)
+
+      assert page_one.total_count == 65
+      assert page_one.total_pages == 2
+      assert page_one.page == 1
+      assert length(page_one.results) == 60
+
+      assert page_two.total_count == 65
+      assert page_two.total_pages == 2
+      assert page_two.page == 2
+      assert length(page_two.results) == 5
+    end
+
+    test "search_query/1 returns unique results by name" do
+      _first_printing =
+        card_fixture(%{
+          name: "Lightning Bolt",
+          normalized_name: "lightning bolt",
+          set_code: "lea"
+        })
+
+      _second_printing =
+        card_fixture(%{
+          name: "Lightning Bolt",
+          normalized_name: "lightning bolt",
+          set_code: "clu"
+        })
+
+      assert {:ok, results} = Cards.search_query("Lightning Bolt")
+      assert length(results) == 1
+      assert Enum.map(results, & &1.name) == ["Lightning Bolt"]
+    end
+
     test "search_query/1 supports negated type filters" do
       _excluded =
         card_fixture(%{

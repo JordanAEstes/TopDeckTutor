@@ -306,6 +306,31 @@ defmodule TopDeckTutorWeb.CoreComponents do
   end
 
   @doc """
+  Renders Magic mana and card symbols inside text.
+
+  Supports Scryfall-style tokens like `{W}`, `{2/U}`, `{T}`, and `{CHAOS}`.
+  Unsupported tokens are rendered as plain text.
+  """
+  attr :text, :string, default: nil
+  attr :mode, :string, default: "oracle", values: ~w(cost oracle)
+  attr :class, :any, default: nil
+
+  def mana_text(assigns) do
+    IO.inspect(assigns)
+
+    assigns =
+      assigns
+      |> assign(:parts, mana_text_parts(assigns.text || ""))
+      |> assign(:symbol_class, mana_symbol_class(assigns.mode))
+
+    ~H"""
+    <span :if={@text not in [nil, ""]} class={@class}>
+      {render_mana_parts(@parts, @symbol_class)}
+    </span>
+    """
+  end
+
+  @doc """
   Renders a header with title.
   """
   slot :inner_block, required: true
@@ -417,6 +442,93 @@ defmodule TopDeckTutorWeb.CoreComponents do
     </ul>
     """
   end
+
+  defp mana_text_parts(text) do
+    ~r/(\{[^}]+\}|\n)/
+    |> Regex.split(text, include_captures: true, trim: false)
+    |> Enum.flat_map(&mana_text_part/1)
+  end
+
+  defp mana_text_part(""), do: []
+  defp mana_text_part("\n"), do: [%{type: :newline}]
+
+  defp mana_text_part(part) do
+    case Regex.run(~r/^\{([^}]+)\}$/, part) do
+      [_, token] ->
+        case mana_symbol_code(token) do
+          nil -> [%{type: :text, value: part}]
+          code -> [%{type: :symbol, value: code, raw: part}]
+        end
+
+      _ ->
+        [%{type: :text, value: part}]
+    end
+  end
+
+  defp render_mana_parts(parts, symbol_class) do
+    Enum.map(parts, fn
+      %{type: :text, value: value} ->
+        Phoenix.HTML.html_escape(value)
+
+      %{type: :newline} ->
+        Phoenix.HTML.raw("<br>")
+
+      %{type: :symbol, value: value, raw: raw} ->
+        escaped_raw = raw |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
+
+        Phoenix.HTML.raw(
+          ~s(<span class="inline-block align-middle"><span class="sr-only">#{escaped_raw}</span><i class="#{symbol_class} ms-#{value}" aria-hidden="true"></i></span>)
+        )
+    end)
+  end
+
+  defp mana_symbol_class("cost"),
+    do: "ms ms-cost ms-shadow text-[1em] mx-[0.08em]"
+
+  defp mana_symbol_class("oracle"),
+    do: "ms ms-cost ms-shadow text-[0.95em] mx-[0.08em]"
+
+  defp mana_symbol_code(token) do
+    token =
+      token
+      |> String.trim()
+      |> String.upcase()
+
+    cond do
+      token == "T" -> "tap"
+      token == "Q" -> "untap"
+      token == "CHAOS" -> "chaos"
+      token == "∞" -> "infinity"
+      String.contains?(token, "/") -> split_mana_symbol_code(token)
+      true -> single_mana_symbol_code(token)
+    end
+  end
+
+  defp split_mana_symbol_code(token) do
+    parts = String.split(token, "/")
+
+    if Enum.all?(parts, &valid_split_mana_part?/1) do
+      Enum.map_join(parts, "", &String.downcase/1)
+    end
+  end
+
+  defp single_mana_symbol_code(token) do
+    cond do
+      token in ~w(W U B R G C X Y Z S E P H D L) ->
+        String.downcase(token)
+
+      token == "½" ->
+        "1-2"
+
+      Regex.match?(~r/^\d+$/, token) ->
+        token
+
+      true ->
+        nil
+    end
+  end
+
+  defp valid_split_mana_part?(part), do: part in ~w(W U B R G C 2 P)
 
   @doc """
   Renders a [Heroicon](https://heroicons.com).

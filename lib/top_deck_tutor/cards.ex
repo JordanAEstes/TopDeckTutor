@@ -36,16 +36,60 @@ defmodule TopDeckTutor.Cards do
     |> Repo.all()
   end
 
+  def search_cards_by_name(term) when is_binary(term) do
+    normalized_term = normalize_name(term)
+
+    Card
+    |> where(
+      [c],
+      ilike(c.name, ^"%#{term}%") or
+        ilike(c.normalized_name, ^"%#{normalized_term}%")
+    )
+    |> distinct([c], c.normalized_name)
+    |> order_by([c], asc: c.normalized_name, asc: c.name)
+    |> limit(50)
+    |> Repo.all()
+  end
+
   def search_scope do
     from c in Card,
+      distinct: c.normalized_name,
       order_by: [asc: c.name]
   end
 
   def search_ast(ast) when is_list(ast) do
     ast
-    |> TopDeckTutor.Search.Compiler.compile(search_scope())
-    |> limit(100)
-    |> Repo.all()
+    |> search_ast_page()
+    |> Map.fetch!(:results)
+  end
+
+  def search_ast_page(ast, opts \\ []) when is_list(ast) do
+    page_size = Keyword.get(opts, :page_size, 60)
+    page = opts |> Keyword.get(:page, 1) |> normalize_page()
+
+    base_query =
+      ast
+      |> normalize_global_search_ast()
+      |> TopDeckTutor.Search.Compiler.compile(search_scope())
+
+    total_count = Repo.aggregate(base_query, :count, :id)
+    total_pages = max(div(total_count + page_size - 1, page_size), 1)
+    page = min(page, total_pages)
+    offset = (page - 1) * page_size
+
+    results =
+      base_query
+      |> limit(^page_size)
+      |> offset(^offset)
+      |> Repo.all()
+
+    %{
+      results: results,
+      total_count: total_count,
+      page: page,
+      page_size: page_size,
+      total_pages: total_pages
+    }
   end
 
   def search_query(query_string) when is_binary(query_string) do
@@ -84,11 +128,30 @@ defmodule TopDeckTutor.Cards do
     )
   end
 
+  defp normalize_page(page) when is_integer(page) and page > 0, do: page
+
+  defp normalize_page(page) when is_binary(page) do
+    case Integer.parse(page) do
+      {value, ""} when value > 0 -> value
+      _ -> 1
+    end
+  end
+
+  defp normalize_page(_), do: 1
+
   defp normalize_name(name) do
     name
     |> String.downcase()
     |> String.replace(~r/[^a-z0-9\s]/u, "")
     |> String.replace(~r/\s+/u, " ")
     |> String.trim()
+  end
+
+  defp normalize_global_search_ast(ast) do
+    if Enum.all?(ast, &match?({:text, _}, &1)) do
+      Enum.map(ast, fn {:text, term} -> {:field_contains, :name, term} end)
+    else
+      ast
+    end
   end
 end

@@ -44,7 +44,7 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
     results =
       case String.trim(q) do
         "" -> []
-        term -> Cards.search_cards(term)
+        term -> Cards.search_cards_by_name(term)
       end
 
     {:noreply,
@@ -67,7 +67,8 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   def handle_event("set_view_mode", %{"mode" => mode}, socket) do
     mode = normalize_view_mode(mode)
 
-    {:noreply, push_patch(socket, to: show_path(socket.assigns.deck, mode, socket.assigns.deck_query))}
+    {:noreply,
+     push_patch(socket, to: show_path(socket.assigns.deck, mode, socket.assigns.deck_query))}
   end
 
   @impl true

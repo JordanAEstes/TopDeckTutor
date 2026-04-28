@@ -12,7 +12,6 @@
         for={%{}}
         as={:search}
         id="global-search-form"
-        phx-change="search"
         phx-submit="search"
         class="space-y-3"
       >
@@ -38,14 +37,58 @@
     <% end %>
 
     <section class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-medium">Results</h2>
-        <div class="app-muted text-sm">
-          <%= if @query == "" do %>
-            Enter a search
-          <% else %>
-            {length(@results)} matches
-          <% end %>
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div class="space-y-1">
+          <h2 class="text-2xl font-semibold tracking-tight">Results</h2>
+          <p class="app-muted text-sm">Browse matches from the full card catalog.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="app-muted text-sm">
+            <%= if @query == "" do %>
+              Enter a search
+            <% else %>
+              {@total_count} matches
+            <% end %>
+          </div>
+
+          <div class="inline-flex rounded-lg border bg-white p-1 shadow-sm">
+            <button
+              phx-click="set_view_mode"
+              phx-value-mode="details"
+              class={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                @view_mode == "details" && "bg-[var(--brand)] text-[var(--text)]",
+                @view_mode != "details" && "text-zinc-600 hover:bg-zinc-100"
+              ]}
+            >
+              Details
+            </button>
+
+            <button
+              phx-click="set_view_mode"
+              phx-value-mode="images"
+              class={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                @view_mode == "images" && "bg-[var(--brand)] text-[var(--text)]",
+                @view_mode != "images" && "text-zinc-600 hover:bg-zinc-100"
+              ]}
+            >
+              Images
+            </button>
+
+            <button
+              phx-click="set_view_mode"
+              phx-value-mode="list"
+              class={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                @view_mode == "list" && "bg-[var(--brand)] text-[var(--text)]",
+                @view_mode != "list" && "text-zinc-600 hover:bg-zinc-100"
+              ]}
+            >
+              List
+            </button>
+          </div>
         </div>
       </div>
 
@@ -55,35 +98,166 @@
         </div>
       <% end %>
 
-      <div class="space-y-3">
-        <%= for card <- @results do %>
-          <div class="app-panel p-4">
-            <div class="flex items-start justify-between gap-4">
-              <div class="min-w-0">
-                <.link navigate={~p"/cards/#{card}"} class="font-medium hover:underline">
-                  {card.name}
-                </.link>
-
-                <%= if card.mana_cost not in [nil, ""] do %>
-                  <div class="app-muted text-sm">{card.mana_cost}</div>
+      <%= if @view_mode == "list" do %>
+        <div class="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+          <aside class="hidden lg:block">
+            <div class="sticky top-24 space-y-3">
+              <div class="app-panel overflow-hidden p-3">
+                <%= if @preview_card do %>
+                  <%= if image = @preview_card.image_uris["normal"] do %>
+                    <img
+                      src={image}
+                      alt={@preview_card.name}
+                      class="w-full rounded-xl"
+                    />
+                  <% else %>
+                    <div class="flex aspect-[5/7] items-center justify-center rounded-xl bg-zinc-100 text-sm app-muted">
+                      No image
+                    </div>
+                  <% end %>
                 <% end %>
+              </div>
 
-                <div class="app-muted text-sm">{card.type_line}</div>
+              <%= if @preview_card do %>
+                <div class="app-panel p-4">
+                  <div class="space-y-1">
+                    <div class="font-semibold">{@preview_card.name}</div>
 
-                <%= if card.oracle_text not in [nil, ""] do %>
-                  <div class="app-muted mt-2 whitespace-pre-line text-sm">
-                    {card.oracle_text}
+                    <%= if @preview_card.mana_cost not in [nil, ""] do %>
+                      <div class="text-sm app-muted">
+                        <.mana_text text={@preview_card.mana_cost} mode="cost" />
+                      </div>
+                    <% end %>
+
+                    <div class="text-sm app-muted">{@preview_card.type_line}</div>
                   </div>
-                <% end %>
-              </div>
 
-              <div class="app-muted shrink-0 text-sm">
-                MV {card.mana_value}
-              </div>
+                  <%= if @preview_card.oracle_text not in [nil, ""] do %>
+                    <div class="mt-3 text-sm app-muted">
+                      <.mana_text text={@preview_card.oracle_text} />
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </aside>
+
+          <div class="app-panel overflow-hidden">
+            <div class="grid auto-rows-max grid-flow-col grid-cols-2 gap-px bg-black/5 [grid-template-rows:repeat(50,minmax(0,max-content))]">
+              <%= for card <- @results do %>
+                <article
+                  class={[
+                    "flex items-center justify-between gap-4 bg-white px-5 py-3 transition hover:bg-black/5",
+                    @preview_card && @preview_card.id == card.id && "bg-black/5"
+                  ]}
+                  id={"search-result-#{card.id}"}
+                  phx-hook="CardPreview"
+                  data-card-id={card.id}
+                  phx-value-card_id={card.id}
+                >
+                  <.link
+                    navigate={~p"/cards/#{card}"}
+                    class="min-w-0 truncate text-left font-medium hover:underline"
+                  >
+                    {card.name}
+                  </.link>
+
+                  <div class="shrink-0 text-right text-sm app-muted">
+                    <%= if card.mana_cost not in [nil, ""] do %>
+                      <.mana_text text={card.mana_cost} mode="cost" />
+                    <% end %>
+                  </div>
+                </article>
+              <% end %>
             </div>
           </div>
-        <% end %>
-      </div>
+        </div>
+      <% else %>
+        <div class={[
+          @view_mode == "images" &&
+            "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+          @view_mode == "details" && "space-y-3"
+        ]}>
+          <%= for card <- @results do %>
+            <%= if @view_mode == "images" do %>
+              <article class="space-y-2">
+                <.link
+                  navigate={~p"/cards/#{card}"}
+                  class="block overflow-hidden rounded-xl border bg-white shadow-sm transition hover:-translate-y-[1px] hover:shadow-md"
+                >
+                  <%= if image = card.image_uris["normal"] do %>
+                    <img
+                      src={image}
+                      alt={card.name}
+                      class="w-full"
+                    />
+                  <% else %>
+                    <div class="flex aspect-[5/7] items-center justify-center bg-zinc-100 text-sm app-muted">
+                      No image
+                    </div>
+                  <% end %>
+                </.link>
+              </article>
+            <% else %>
+              <div class="app-panel p-4">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <.link navigate={~p"/cards/#{card}"} class="font-medium hover:underline">
+                      {card.name}
+                    </.link>
+
+                    <%= if card.mana_cost not in [nil, ""] do %>
+                      <div class="app-muted text-sm">
+                        <.mana_text text={card.mana_cost} mode="cost" />
+                      </div>
+                    <% end %>
+
+                    <div class="app-muted text-sm">{card.type_line}</div>
+
+                    <%= if card.oracle_text not in [nil, ""] do %>
+                      <div class="app-muted mt-2 text-sm">
+                        <.mana_text text={card.oracle_text} />
+                      </div>
+                    <% end %>
+                  </div>
+
+                  <div class="app-muted shrink-0 text-sm">
+                    <%= if card.mana_cost not in [nil, ""] do %>
+                      <.mana_text text={card.mana_cost} mode="cost" />
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%= if @query != "" and @total_pages > 1 do %>
+        <div class="flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-white px-4 py-3 shadow-sm">
+          <button
+            phx-click="change_page"
+            phx-value-page={@page - 1}
+            disabled={@page == 1}
+            class="app-button-secondary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Previous
+          </button>
+
+          <div class="text-sm app-muted">
+            Page {@page} of {@total_pages}
+          </div>
+
+          <button
+            phx-click="change_page"
+            phx-value-page={@page + 1}
+            disabled={@page >= @total_pages}
+            class="app-button-secondary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      <% end %>
     </section>
   </div>
 </Layouts.app>
