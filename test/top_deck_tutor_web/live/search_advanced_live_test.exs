@@ -103,8 +103,13 @@ defmodule TopDeckTutorWeb.SearchAdvancedLiveTest do
     |> render_click()
 
     assert_patch(view, ~p"/search/advanced")
-    assert has_element?(view, "#advanced-search-empty")
     refute render(view) =~ "Sol Ring"
+    assert has_element?(view, "#advanced-search-form")
+
+    refute has_element?(
+             view,
+             ~s(#advanced-search-form input[name="advanced_search[name]"][value="Sol Ring"])
+           )
   end
 
   test "submitting multiple filters redirects to the main search query", %{conn: conn} do
