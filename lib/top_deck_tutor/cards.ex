@@ -3,6 +3,7 @@ defmodule TopDeckTutor.Cards do
 
   alias TopDeckTutor.Repo
   alias TopDeckTutor.Cards.Card
+  alias TopDeckTutor.Decks
 
   def list_cards do
     Repo.all(Card)
@@ -66,11 +67,12 @@ defmodule TopDeckTutor.Cards do
   def search_ast_page(ast, opts \\ []) when is_list(ast) do
     page_size = Keyword.get(opts, :page_size, 60)
     page = opts |> Keyword.get(:page, 1) |> normalize_page()
+    scope = Keyword.get(opts, :scope, :catalog)
 
     base_query =
       ast
       |> normalize_global_search_ast()
-      |> TopDeckTutor.Search.Compiler.compile(search_scope())
+      |> TopDeckTutor.Search.Compiler.compile(search_scope(scope))
 
     total_count = Repo.aggregate(base_query, :count, :id)
     total_pages = max(div(total_count + page_size - 1, page_size), 1)
@@ -145,6 +147,13 @@ defmodule TopDeckTutor.Cards do
     |> String.replace(~r/[^a-z0-9\s]/u, "")
     |> String.replace(~r/\s+/u, " ")
     |> String.trim()
+  end
+
+  defp search_scope(:catalog), do: search_scope()
+  defp search_scope({:decks, []}), do: from(c in Card, where: false)
+
+  defp search_scope({:decks, {user, deck_ids}}) do
+    Decks.selected_decks_search_scope(user, deck_ids)
   end
 
   defp normalize_global_search_ast(ast) do

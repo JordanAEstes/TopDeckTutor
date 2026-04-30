@@ -1,0 +1,153 @@
+<Layouts.app flash={@flash} current_scope={@current_scope}>
+  <div class="mx-auto max-w-6xl space-y-8 px-4 py-10">
+    <section class="space-y-2">
+      <h1 class="text-3xl font-semibold tracking-tight">Advanced Search</h1>
+      <p class="app-muted max-w-3xl text-sm">
+        Build a structured card search with guided filters while still using the shared search syntax engine behind the scenes.
+      </p>
+    </section>
+
+    <section class="app-panel p-5">
+      <.form for={@form} id="advanced-search-form" phx-change="validate" phx-submit="search">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <.input field={@form[:name]} type="text" label="Name" class="app-input" />
+          <.input field={@form[:oracle_text]} type="text" label="Oracle text" class="app-input" />
+          <.input field={@form[:mana_cost]} type="text" label="Mana cost" class="app-input" />
+          <.input field={@form[:mana_value]} type="text" label="Mana value" class="app-input" />
+          <.input
+            field={@form[:card_type]}
+            type="select"
+            label="Card type"
+            prompt="Any type"
+            options={card_type_options()}
+            class="app-input"
+          />
+          <.input
+            field={@form[:keyword]}
+            type="select"
+            label="Keyword"
+            prompt="Any keyword"
+            options={keyword_options()}
+            class="app-input"
+          />
+          <.input field={@form[:power]} type="text" label="Power" class="app-input" />
+          <.input field={@form[:toughness]} type="text" label="Toughness" class="app-input" />
+          <.input
+            field={@form[:rarity]}
+            type="select"
+            label="Rarity"
+            prompt="Any rarity"
+            options={rarity_options()}
+            class="app-input"
+          />
+          <.input
+            field={@form[:legality_status]}
+            type="select"
+            label="Legality status"
+            prompt="Any status"
+            options={legality_status_options()}
+            class="app-input"
+          />
+          <.input
+            field={@form[:legality_format]}
+            type="select"
+            label="Legality format"
+            prompt="Any format"
+            options={legality_format_options()}
+            class="app-input"
+          />
+        </div>
+
+        <div class="mt-6 grid gap-6 lg:grid-cols-2">
+          <div class="rounded-2xl border border-[var(--border)] bg-white/90 p-4">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-500">Color</h2>
+            <div class="mt-3 flex flex-wrap gap-3">
+              <label
+                :for={color <- color_options()}
+                class="inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-2 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  name="advanced_search[colors][]"
+                  value={color}
+                  checked={selected?(@form[:colors].value, color)}
+                  class="checkbox checkbox-sm"
+                />
+                <span>{color}</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-[var(--border)] bg-white/90 p-4">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-500">
+              Color identity
+            </h2>
+            <div class="mt-3 flex flex-wrap gap-3">
+              <label
+                :for={color <- color_options()}
+                class="inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-3 py-2 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  name="advanced_search[color_identity][]"
+                  value={color}
+                  checked={selected?(@form[:color_identity].value, color)}
+                  class="checkbox checkbox-sm"
+                />
+                <span>{color}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <%= if @current_scope && @current_scope.user do %>
+          <div class="mt-6 rounded-2xl border border-[var(--border)] bg-white/90 p-4">
+            <div class="grid gap-4 md:grid-cols-2">
+              <.input
+                field={@form[:scope]}
+                id="advanced-search-scope"
+                type="select"
+                label="Search scope"
+                options={[
+                  {"Entire card catalog", "catalog"},
+                  {"Selected decks", "selected_decks"}
+                ]}
+                class="app-input"
+              />
+
+              <%= if Ecto.Changeset.get_field(@form.source, :scope) == "selected_decks" do %>
+                <.input
+                  field={@form[:deck_ids]}
+                  id="advanced-search-deck-ids"
+                  type="select"
+                  label="Decks"
+                  options={
+                    Enum.map(
+                      @decks,
+                      &{"#{&1.name} (#{Phoenix.Naming.humanize(&1.format)})", &1.id}
+                    )
+                  }
+                  multiple={true}
+                  class="app-input min-h-36"
+                />
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="mt-6 flex items-center justify-end gap-3">
+          <button
+            id="advanced-search-reset"
+            type="button"
+            phx-click="reset"
+            class="app-button-secondary"
+          >
+            Reset
+          </button>
+
+          <button type="submit" class="app-button-primary">Run search</button>
+        </div>
+      </.form>
+    </section>
+  </div>
+</Layouts.app>

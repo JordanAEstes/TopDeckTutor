@@ -70,6 +70,11 @@ defmodule TopDeckTutor.Search.Compiler do
     dynamic([c, ...], ilike(c.oracle_text, ^pattern))
   end
 
+  defp node_dynamic({:field_contains, :mana_cost, value}) do
+    pattern = "%#{value}%"
+    dynamic([c, ...], ilike(c.mana_cost, ^pattern))
+  end
+
   defp node_dynamic({:color_identity, colors}) do
     dynamic([c, ...], fragment("? @> ?", c.color_identity, type(^colors, {:array, :string})))
   end

@@ -151,6 +151,11 @@ defmodule TopDeckTutor.Search.ParserTest do
              Parser.parse(["text:draw"])
   end
 
+  test "parses mana cost contains filter" do
+    assert {:ok, [{:field_contains, :mana_cost, "{1}{U}"}]} =
+             Parser.parse(["mana:{1}{U}"])
+  end
+
   test "parses quoted text field filter" do
     assert {:ok, [{:field_contains, :oracle_text, "Draw two"}]} =
              Parser.parse([~s(text:"Draw two")])
