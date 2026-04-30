@@ -24,6 +24,9 @@ defmodule TopDeckTutor.Search.Parser do
       String.starts_with?(token, "text:") ->
         parse_contains_field(token, "text:", :oracle_text)
 
+      String.starts_with?(token, "mana:") ->
+        parse_contains_field(token, "mana:", :mana_cost)
+
       String.starts_with?(token, "type:") ->
         parse_type(token)
 

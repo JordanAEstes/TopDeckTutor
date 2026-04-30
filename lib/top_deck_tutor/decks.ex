@@ -125,9 +125,27 @@ defmodule TopDeckTutor.Decks do
       select: %{card: c, quantity: de.quantity, section: de.section}
   end
 
+  def selected_decks_search_scope(%User{id: user_id}, deck_ids) when is_list(deck_ids) do
+    from c in Card,
+      join: de in DeckEntry,
+      on: de.card_id == c.id,
+      join: d in Deck,
+      on: d.id == de.deck_id,
+      where: d.user_id == ^user_id and de.deck_id in ^deck_ids,
+      distinct: c.normalized_name,
+      order_by: [asc: c.name]
+  end
+
   def search_ast_in_deck(%Deck{} = deck, ast) when is_list(ast) do
     ast
     |> TopDeckTutor.Search.Compiler.compile(deck_search_scope(deck))
+    |> Repo.all()
+  end
+
+  def search_ast_in_decks(%User{} = user, deck_ids, ast)
+      when is_list(deck_ids) and is_list(ast) do
+    ast
+    |> TopDeckTutor.Search.Compiler.compile(selected_decks_search_scope(user, deck_ids))
     |> Repo.all()
   end
 
