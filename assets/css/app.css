@@ -2,6 +2,18 @@
    https://tailwindcss.com/docs/configuration */
 
 @import "tailwindcss" source(none);
+@import "../vendor/mana-font/css/mana.css";
+
+@font-face {
+  font-family: "Mana";
+  src:
+    url("/assets/fonts/mana.woff2?v=1.18.0") format("woff2"),
+    url("/assets/fonts/mana.woff?v=1.18.0") format("woff"),
+    url("/assets/fonts/mana.ttf?v=1.18.0") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
 
 :root {
   --bg: #f7f4ec;
@@ -29,6 +41,7 @@
   --mana-black: #5a5a68;
   --mana-red: #c86a5a;
   --mana-green: #6fa06a;
+  --mana-colorless: #B8BDC7;
 
   --danger: #9c4b29;
 }

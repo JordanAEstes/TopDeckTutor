@@ -28,7 +28,7 @@
 
       <div class="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)_340px]">
         <section class="space-y-4">
-          <div class="app-panel overflow-hidden p-4">
+          <div class="app-panel overflow-hidden p-4" style={card_frame_style(@card)}>
             <%= if image = @card.image_uris["normal"] do %>
               <img
                 src={image}
@@ -68,7 +68,7 @@
 
               <%= if @card.mana_cost not in [nil, ""] do %>
                 <div class="shrink-0 text-xl font-medium">
-                  {@card.mana_cost}
+                  <.mana_text text={@card.mana_cost} mode="cost" />
                 </div>
               <% end %>
             </div>
@@ -82,8 +82,8 @@
 
           <div class="space-y-5 px-5 py-5">
             <%= if @card.oracle_text not in [nil, ""] do %>
-              <div class="whitespace-pre-line text-lg leading-8">
-                {@card.oracle_text}
+              <div class="text-lg leading-8">
+                <.mana_text text={@card.oracle_text} class="leading-8" />
               </div>
             <% end %>
 
