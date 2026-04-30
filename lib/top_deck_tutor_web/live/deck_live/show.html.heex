@@ -371,7 +371,10 @@
                       <div class="flex items-start justify-between gap-4">
                         <div class="min-w-0 space-y-1">
                           <div class="text-lg font-medium">
-                            {entry.quantity} × {entry.card.name}
+                            {entry.quantity} ×
+                            <.link navigate={~p"/cards/#{entry.card}"} class="hover:underline">
+                              {entry.card.name}
+                            </.link>
                           </div>
 
                           <div class="text-sm app-muted">
