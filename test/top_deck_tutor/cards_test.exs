@@ -719,6 +719,65 @@ defmodule TopDeckTutor.CardsTest do
     end
   end
 
+  describe "search_legendary_creatures_by_name/1" do
+    test "does not search until the term has at least three characters" do
+      _card =
+        card_fixture(%{
+          name: "Alela, Artful Provocateur",
+          normalized_name: "alela artful provocateur",
+          type_line: "Legendary Creature — Faerie Warlock",
+          is_legendary: true,
+          is_creature: true
+        })
+
+      assert Cards.search_legendary_creatures_by_name("Al") == []
+    end
+
+    test "returns only matching legendary creatures" do
+      commander =
+        card_fixture(%{
+          name: "Alela, Artful Provocateur",
+          normalized_name: "alela artful provocateur",
+          type_line: "Legendary Creature — Faerie Warlock",
+          is_legendary: true,
+          is_creature: true
+        })
+
+      _nonlegendary =
+        card_fixture(%{
+          name: "Alela's Vanguard",
+          normalized_name: "alelas vanguard",
+          type_line: "Creature — Faerie Knight",
+          is_legendary: false,
+          is_creature: true
+        })
+
+      _noncreature =
+        card_fixture(%{
+          name: "Alela's Signet",
+          normalized_name: "alelas signet",
+          type_line: "Legendary Artifact",
+          is_legendary: true,
+          is_creature: false
+        })
+
+      assert Enum.map(Cards.search_legendary_creatures_by_name("Ale"), & &1.id) == [commander.id]
+    end
+
+    test "matches from the beginning of the normalized card name" do
+      _commander =
+        card_fixture(%{
+          name: "Alela, Artful Provocateur",
+          normalized_name: "alela artful provocateur",
+          type_line: "Legendary Creature — Faerie Warlock",
+          is_legendary: true,
+          is_creature: true
+        })
+
+      assert Cards.search_legendary_creatures_by_name("Artful") == []
+    end
+  end
+
   defp color_combinations(colors) do
     1..length(colors)
     |> Enum.flat_map(&combinations(colors, &1))

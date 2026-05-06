@@ -52,6 +52,24 @@ defmodule TopDeckTutor.Cards do
     |> Repo.all()
   end
 
+  def search_legendary_creatures_by_name(term) when is_binary(term) do
+    normalized_term = normalize_name(term)
+
+    if String.length(normalized_term) < 3 do
+      []
+    else
+      prefix = "#{normalized_term}%"
+
+      Card
+      |> where([c], c.is_legendary and c.is_creature)
+      |> where([c], like(c.normalized_name, ^prefix))
+      |> distinct([c], c.normalized_name)
+      |> order_by([c], asc: c.normalized_name, asc: c.name)
+      |> limit(20)
+      |> Repo.all()
+    end
+  end
+
   def search_scope do
     from c in Card,
       distinct: c.normalized_name,

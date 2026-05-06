@@ -143,6 +143,37 @@ defmodule TopDeckTutor.DecksTest do
     end
   end
 
+  describe "set_commander/2" do
+    test "adds the selected card to the command section" do
+      deck = deck_fixture()
+      commander = card_fixture(%{name: "Alela, Artful Provocateur"})
+
+      assert {:ok, %DeckEntry{} = entry} = Decks.set_commander(deck, commander)
+
+      assert entry.deck_id == deck.id
+      assert entry.card_id == commander.id
+      assert entry.section == "command"
+      assert entry.quantity == 1
+    end
+
+    test "replaces existing command section entries" do
+      deck = deck_fixture()
+      first = card_fixture(%{name: "Alela, Artful Provocateur"})
+      second = card_fixture(%{name: "Muldrotha, the Gravetide"})
+
+      assert {:ok, _entry} = Decks.set_commander(deck, first)
+      assert {:ok, %DeckEntry{} = entry} = Decks.set_commander(deck, second)
+
+      command_entries =
+        deck
+        |> Decks.list_entries()
+        |> Enum.filter(&(&1.section == "command"))
+
+      assert Enum.map(command_entries, & &1.id) == [entry.id]
+      assert entry.card_id == second.id
+    end
+  end
+
   describe "list_entries/1" do
     test "returns entries for the deck with cards preloaded" do
       deck = deck_fixture()

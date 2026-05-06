@@ -22,6 +22,47 @@
       class="app-input"
     />
 
+    <div :if={@selected_format == "commander"} id="deck-commander-picker" class="space-y-2">
+      <label for="deck-commander-search" class="block text-sm font-medium">
+        Commander
+      </label>
+
+      <div class="relative">
+        <input
+          id="deck-commander-search"
+          name="commander_search"
+          type="text"
+          value={@commander_search_term}
+          phx-target={@myself}
+          phx-keyup="search_commander"
+          autocomplete="off"
+          class="app-input w-full"
+        />
+
+        <div
+          :if={@commander_search_results != []}
+          id="deck-commander-results"
+          class="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-lg border border-[var(--border)] bg-white shadow-lg"
+        >
+          <button
+            :for={card <- @commander_search_results}
+            id={"deck-commander-option-#{card.id}"}
+            type="button"
+            phx-target={@myself}
+            phx-click="select_commander"
+            phx-value-id={card.id}
+            class="block w-full px-3 py-2 text-left text-sm transition hover:bg-zinc-100"
+          >
+            {card.name}
+          </button>
+        </div>
+      </div>
+
+      <p :if={@selected_commander} id="deck-selected-commander" class="text-sm app-muted">
+        {@selected_commander.name}
+      </p>
+    </div>
+
     <.input
       field={@form[:visibility]}
       type="select"
