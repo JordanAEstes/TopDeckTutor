@@ -70,6 +70,9 @@
         <div class="mt-6 grid gap-6 lg:grid-cols-2">
           <div class="rounded-2xl border border-[var(--border)] bg-white/90 p-4">
             <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-500">Color</h2>
+            <p class="mt-2 text-sm text-zinc-600">
+              Exact card colors. Choosing white and blue matches only white-blue cards.
+            </p>
             <div class="mt-3 flex flex-wrap gap-3">
               <label
                 :for={color <- color_options()}
@@ -96,6 +99,9 @@
             <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-500">
               Color identity
             </h2>
+            <p class="mt-2 text-sm text-zinc-600">
+              Commander-style subset matching. Choosing white and blue matches colorless, mono-white, mono-blue, and white-blue identities.
+            </p>
             <div class="mt-3 flex flex-wrap gap-3">
               <label
                 :for={color <- color_options()}

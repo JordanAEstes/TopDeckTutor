@@ -102,19 +102,24 @@
         <div class="text-sm text-zinc-600">Cards restricted in Vintage.</div>
 
         <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">color:w</div>
-        <div class="text-sm text-zinc-600">Match cards whose actual colors include white.</div>
+        <div class="text-sm text-zinc-600">Match cards that are exactly white.</div>
 
         <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">color:wu</div>
         <div class="text-sm text-zinc-600">
-          Match cards whose actual colors include both white and blue.
+          Match cards that are exactly white-blue. This does not match mono-white, mono-blue, or three-color cards.
         </div>
 
         <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">color:c</div>
-        <div class="text-sm text-zinc-600">Match colorless cards.</div>
+        <div class="text-sm text-zinc-600">Match cards whose actual colors are colorless.</div>
 
         <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">ci:wu</div>
         <div class="text-sm text-zinc-600">
-          Match cards whose color identity includes white and blue. This is distinct from <span class="font-mono">color:</span>, which checks actual card colors.
+          Match cards whose color identity is a subset of white-blue, including colorless, mono-white, mono-blue, and white-blue cards. This is distinct from <span class="font-mono">color:</span>, which checks exact card colors.
+        </div>
+
+        <div class="rounded-md bg-zinc-100 p-3 font-mono text-sm">ci:c</div>
+        <div class="text-sm text-zinc-600">
+          Match cards whose color identity is colorless.
         </div>
       </div>
     </section>

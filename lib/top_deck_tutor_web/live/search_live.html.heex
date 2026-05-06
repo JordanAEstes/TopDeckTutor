@@ -52,6 +52,47 @@
             <% end %>
           </div>
 
+          <div
+            id="global-search-game-filter"
+            class="inline-flex rounded-lg border bg-white p-1 shadow-sm"
+          >
+            <button
+              phx-click="set_game_filter"
+              phx-value-game="all"
+              class={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                @game_filter == "all" && "bg-[var(--brand)] text-[var(--text)]",
+                @game_filter != "all" && "text-zinc-600 hover:bg-zinc-100"
+              ]}
+            >
+              All
+            </button>
+
+            <button
+              phx-click="set_game_filter"
+              phx-value-game="paper"
+              class={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                @game_filter == "paper" && "bg-[var(--brand)] text-[var(--text)]",
+                @game_filter != "paper" && "text-zinc-600 hover:bg-zinc-100"
+              ]}
+            >
+              Paper
+            </button>
+
+            <button
+              phx-click="set_game_filter"
+              phx-value-game="arena"
+              class={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition",
+                @game_filter == "arena" && "bg-[var(--brand)] text-[var(--text)]",
+                @game_filter != "arena" && "text-zinc-600 hover:bg-zinc-100"
+              ]}
+            >
+              Arena
+            </button>
+          </div>
+
           <div class="inline-flex rounded-lg border bg-white p-1 shadow-sm">
             <button
               phx-click="set_view_mode"

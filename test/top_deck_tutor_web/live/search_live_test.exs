@@ -19,6 +19,47 @@ defmodule TopDeckTutorWeb.SearchLiveTest do
            )
   end
 
+  test "filters global search results with the game selector and keeps it in the URL", %{
+    conn: conn
+  } do
+    paper_match =
+      card_fixture(%{
+        name: "Paper Search Match",
+        normalized_name: "paper search match",
+        games: ["paper", "mtgo"]
+      })
+
+    arena_match =
+      card_fixture(%{
+        name: "Arena Search Match",
+        normalized_name: "arena search match",
+        games: ["arena"]
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/search?#{[q: "search match"]}")
+
+    assert has_element?(view, "#search-result-#{paper_match.id}")
+    assert has_element?(view, "#search-result-#{arena_match.id}")
+
+    view
+    |> element("#global-search-game-filter [phx-value-game=\"paper\"]")
+    |> render_click()
+
+    assert_patch(view, ~p"/search?#{[q: "search match", game: "paper"]}")
+    assert has_element?(view, "#search-result-#{paper_match.id}")
+    refute has_element?(view, "#search-result-#{arena_match.id}")
+  end
+
+  test "submitting the search form preserves the selected game filter", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/search?#{[game: "arena"]}")
+
+    view
+    |> form("#global-search-form", %{"search" => %{"q" => "ward"}})
+    |> render_submit()
+
+    assert_patch(view, ~p"/search?#{[q: "ward", game: "arena"]}")
+  end
+
   describe "selected deck scope" do
     setup :register_and_log_in_user
 

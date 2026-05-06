@@ -488,7 +488,7 @@ defmodule TopDeckTutor.DecksTest do
       assert Enum.map(restricted_results, & &1.card.id) == [vintage_restricted_match.id]
     end
 
-    test "supports color filters within a deck and keeps color distinct from color identity" do
+    test "supports exact color filters within a deck" do
       deck = deck_fixture()
       other_deck = deck_fixture()
 
@@ -540,8 +540,7 @@ defmodule TopDeckTutor.DecksTest do
 
       assert {:ok, white_results} = Decks.search_query_in_deck(deck, "color:w")
 
-      assert Enum.map(white_results, & &1.card.id) |> Enum.sort() ==
-               Enum.sort([color_match.id, white_match.id])
+      assert Enum.map(white_results, & &1.card.id) == [white_match.id]
 
       assert {:ok, azorius_results} = Decks.search_query_in_deck(deck, "color:wu")
       assert Enum.map(azorius_results, & &1.card.id) == [color_match.id]
@@ -550,6 +549,80 @@ defmodule TopDeckTutor.DecksTest do
 
       assert Enum.map(colorless_results, & &1.card.id) |> Enum.sort() ==
                Enum.sort([colorless_match.id, color_identity_only.id])
+    end
+
+    test "treats color identity filters as subset matches within a deck" do
+      deck = deck_fixture()
+
+      colorless_match =
+        card_fixture(%{
+          name: "Deck Colorless Identity Match",
+          normalized_name: "deck colorless identity match",
+          colors: [],
+          color_identity: []
+        })
+
+      white_match =
+        card_fixture(%{
+          name: "Deck White Identity Match",
+          normalized_name: "deck white identity match",
+          colors: ["W"],
+          color_identity: ["W"]
+        })
+
+      blue_match =
+        card_fixture(%{
+          name: "Deck Blue Identity Match",
+          normalized_name: "deck blue identity match",
+          colors: ["U"],
+          color_identity: ["U"]
+        })
+
+      azorius_match =
+        card_fixture(%{
+          name: "Deck Azorius Identity Match",
+          normalized_name: "deck azorius identity match",
+          colors: ["W", "U"],
+          color_identity: ["W", "U"]
+        })
+
+      esper_match =
+        card_fixture(%{
+          name: "Deck Esper Identity Match",
+          normalized_name: "deck esper identity match",
+          colors: ["W", "U", "B"],
+          color_identity: ["W", "U", "B"]
+        })
+
+      {:ok, _} = Decks.add_card(deck, colorless_match)
+      {:ok, _} = Decks.add_card(deck, white_match)
+      {:ok, _} = Decks.add_card(deck, blue_match)
+      {:ok, _} = Decks.add_card(deck, azorius_match)
+      {:ok, _} = Decks.add_card(deck, esper_match)
+
+      assert {:ok, azorius_results} = Decks.search_query_in_deck(deck, "ci:wu")
+
+      assert Enum.map(azorius_results, & &1.card.id) |> Enum.sort() ==
+               Enum.sort([colorless_match.id, white_match.id, blue_match.id, azorius_match.id])
+
+      refute esper_match.id in Enum.map(azorius_results, & &1.card.id)
+
+      assert {:ok, colorless_results} = Decks.search_query_in_deck(deck, "ci:c")
+      assert Enum.map(colorless_results, & &1.card.id) == [colorless_match.id]
+    end
+
+    test "keeps color identity filters scoped to the selected deck" do
+      deck = deck_fixture()
+
+      color_identity_only =
+        card_fixture(%{
+          name: "Deck Identity Only",
+          normalized_name: "deck identity only",
+          colors: [],
+          color_identity: ["G"]
+        })
+
+      {:ok, _} = Decks.add_card(deck, color_identity_only)
 
       assert {:ok, ci_results} = Decks.search_query_in_deck(deck, "ci:g")
       assert Enum.map(ci_results, & &1.card.id) == [color_identity_only.id]
@@ -754,7 +827,7 @@ defmodule TopDeckTutor.DecksTest do
 
     cards_by_colors
     |> Enum.filter(fn {colors, _card} ->
-      MapSet.subset?(required_set, MapSet.new(colors))
+      MapSet.subset?(MapSet.new(colors), required_set)
     end)
     |> Enum.map(fn {_colors, card} -> card end)
   end

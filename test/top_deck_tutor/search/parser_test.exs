@@ -69,12 +69,17 @@ defmodule TopDeckTutor.Search.ParserTest do
   end
 
   test "parses three-color color identity filters" do
-    assert {:ok, [{:color_identity, ["U", "B", "R"]}]} = Parser.parse(["ci:ubr"])
+    assert {:ok, [{:color_identity, ["W", "U", "B"]}]} = Parser.parse(["ci:bwu"])
+  end
+
+  test "parses colorless color identity filters" do
+    assert {:ok, [{:color_identity, []}]} = Parser.parse(["ci:c"])
   end
 
   test "parses color filters" do
     assert {:ok, [{:color, ["W"]}]} = Parser.parse(["color:w"])
     assert {:ok, [{:color, ["W", "U"]}]} = Parser.parse(["color:wu"])
+    assert {:ok, [{:color, ["U", "R", "G"]}]} = Parser.parse(["color:rgu"])
     assert {:ok, [{:color, []}]} = Parser.parse(["color:c"])
   end
 
@@ -90,6 +95,7 @@ defmodule TopDeckTutor.Search.ParserTest do
   test "errors on invalid color identity filters" do
     assert {:error, "Invalid color identity: x"} = Parser.parse(["ci:x"])
     assert {:error, "Invalid color identity: wx"} = Parser.parse(["ci:wx"])
+    assert {:error, "Invalid color identity: wxz"} = Parser.parse(["ci:wxz"])
     assert {:error, "Missing value for ci:"} = Parser.parse(["ci:"])
   end
 

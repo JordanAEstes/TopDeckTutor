@@ -14,6 +14,7 @@ defmodule TopDeckTutorWeb.SearchLive do
        results: [],
        ast: [],
        parse_error: nil,
+       game_filter: "all",
        view_mode: "details",
        preview_card: nil,
        page: 1,
@@ -36,6 +37,11 @@ defmodule TopDeckTutorWeb.SearchLive do
       |> Map.get("view", "details")
       |> normalize_view_mode()
 
+    game_filter =
+      params
+      |> Map.get("game", "all")
+      |> normalize_game_filter()
+
     page =
       params
       |> Map.get("page", "1")
@@ -47,6 +53,7 @@ defmodule TopDeckTutorWeb.SearchLive do
       "" ->
         {:noreply,
          socket
+         |> assign(:game_filter, game_filter)
          |> assign(:view_mode, view_mode)
          |> assign(:query, "")
          |> assign(:page, 1)
@@ -61,9 +68,11 @@ defmodule TopDeckTutorWeb.SearchLive do
       _ ->
         case Search.parse(query) do
           {:ok, ast} ->
+            full_ast = maybe_append_game_filter(ast, game_filter)
+
             page_data =
               Cards.search_ast_page(
-                ast,
+                full_ast,
                 page: page,
                 page_size: socket.assigns.page_size,
                 scope: query_scope(search_scope, socket.assigns.current_scope)
@@ -71,11 +80,12 @@ defmodule TopDeckTutorWeb.SearchLive do
 
             {:noreply,
              socket
+             |> assign(:game_filter, game_filter)
              |> assign(:view_mode, view_mode)
              |> assign(:query, query)
              |> assign(:page, page_data.page)
              |> assign(:results, page_data.results)
-             |> assign(:ast, ast)
+             |> assign(:ast, full_ast)
              |> assign(:parse_error, nil)
              |> assign(:preview_card, List.first(page_data.results))
              |> assign(:search_scope, search_scope)
@@ -85,6 +95,7 @@ defmodule TopDeckTutorWeb.SearchLive do
           {:error, reason} ->
             {:noreply,
              socket
+             |> assign(:game_filter, game_filter)
              |> assign(:view_mode, view_mode)
              |> assign(:query, query)
              |> assign(:page, 1)
@@ -104,7 +115,14 @@ defmodule TopDeckTutorWeb.SearchLive do
     {:noreply,
      push_patch(
        socket,
-       to: search_path(String.trim(q), socket.assigns.view_mode, 1, socket.assigns.search_scope)
+       to:
+         search_path(
+           String.trim(q),
+           socket.assigns.view_mode,
+           socket.assigns.game_filter,
+           1,
+           socket.assigns.search_scope
+         )
      )}
   end
 
@@ -116,7 +134,23 @@ defmodule TopDeckTutorWeb.SearchLive do
          search_path(
            socket.assigns.query,
            normalize_view_mode(mode),
+           socket.assigns.game_filter,
            socket.assigns.page,
+           socket.assigns.search_scope
+         )
+     )}
+  end
+
+  @impl true
+  def handle_event("set_game_filter", %{"game" => game}, socket) do
+    {:noreply,
+     push_patch(socket,
+       to:
+         search_path(
+           socket.assigns.query,
+           socket.assigns.view_mode,
+           normalize_game_filter(game),
+           1,
            socket.assigns.search_scope
          )
      )}
@@ -130,6 +164,7 @@ defmodule TopDeckTutorWeb.SearchLive do
          search_path(
            socket.assigns.query,
            socket.assigns.view_mode,
+           socket.assigns.game_filter,
            normalize_page(page),
            socket.assigns.search_scope
          )
@@ -141,11 +176,12 @@ defmodule TopDeckTutorWeb.SearchLive do
     {:noreply, assign(socket, :preview_card, Cards.get_card!(card_id))}
   end
 
-  defp search_path(query, view_mode, page, search_scope) do
+  defp search_path(query, view_mode, game_filter, page, search_scope) do
     params =
       []
       |> maybe_put_param(:q, query, "")
       |> maybe_put_param(:view, view_mode, "details")
+      |> maybe_put_param(:game, game_filter, "all")
       |> maybe_put_param(:page, page, 1)
       |> maybe_put_scope_params(search_scope)
 
@@ -181,6 +217,14 @@ defmodule TopDeckTutorWeb.SearchLive do
   defp normalize_view_mode("images"), do: "images"
   defp normalize_view_mode("list"), do: "list"
   defp normalize_view_mode(_), do: "details"
+
+  defp normalize_game_filter("all"), do: "all"
+  defp normalize_game_filter("paper"), do: "paper"
+  defp normalize_game_filter("arena"), do: "arena"
+  defp normalize_game_filter(_), do: "all"
+
+  defp maybe_append_game_filter(ast, "all"), do: ast
+  defp maybe_append_game_filter(ast, game_filter), do: ast ++ [{:game, game_filter}]
 
   defp normalized_scope(params, current_scope) do
     params
