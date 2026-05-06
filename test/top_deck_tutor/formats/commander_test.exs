@@ -2,6 +2,7 @@ defmodule TopDeckTutor.Formats.CommanderTest do
   use ExUnit.Case, async: true
 
   alias TopDeckTutor.Cards.Card
+  alias TopDeckTutor.Decks.{Deck, DeckEntry}
   alias TopDeckTutor.Formats.Commander
 
   describe "metadata" do
@@ -36,5 +37,47 @@ defmodule TopDeckTutor.Formats.CommanderTest do
 
       assert Commander.max_copies(card, "commander") == :unlimited
     end
+  end
+
+  describe "validate_deck/1" do
+    test "requires a commander in the command section" do
+      deck = %Deck{deck_entries: []}
+
+      assert Commander.validate_deck(deck) ==
+               {:error, ["Commander decks must include a commander"]}
+    end
+
+    test "allows cards within the commander's color identity" do
+      deck =
+        deck_with_entries([
+          entry("command", "Alela, Artful Provocateur", ["W", "U", "B"]),
+          entry("mainboard", "Swords to Plowshares", ["W"]),
+          entry("mainboard", "Counterspell", ["U"]),
+          entry("mainboard", "Arcane Signet", [])
+        ])
+
+      assert Commander.validate_deck(deck) == :ok
+    end
+
+    test "rejects cards outside the commander's color identity" do
+      deck =
+        deck_with_entries([
+          entry("command", "Alela, Artful Provocateur", ["W", "U", "B"]),
+          entry("mainboard", "Lightning Bolt", ["R"])
+        ])
+
+      assert Commander.validate_deck(deck) ==
+               {:error, ["Lightning Bolt has color identity outside Alela, Artful Provocateur"]}
+    end
+  end
+
+  defp deck_with_entries(entries), do: %Deck{deck_entries: entries}
+
+  defp entry(section, name, color_identity) do
+    %DeckEntry{
+      section: section,
+      quantity: 1,
+      card: %Card{name: name, color_identity: color_identity}
+    }
   end
 end

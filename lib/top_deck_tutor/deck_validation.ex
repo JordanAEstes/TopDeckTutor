@@ -16,9 +16,11 @@ defmodule TopDeckTutor.DeckValidation do
         {:error, ["Unsupported format: #{deck.format}"]}
 
       format ->
+        loaded_entries = entries(deck)
+        deck = %{deck | deck_entries: loaded_entries}
+
         errors =
-          deck
-          |> entries()
+          loaded_entries
           |> Enum.flat_map(&entry_errors(&1, format, format_key))
           |> format_result(format.validate_deck(deck))
 
