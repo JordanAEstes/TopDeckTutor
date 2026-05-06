@@ -41,7 +41,7 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
 
   @impl true
   def handle_event("search_cards", %{"value" => q}, socket) do
-    results = Cards.search_cards_by_name(q)
+    results = Cards.search_cards_by_name(q, add_card_search_opts(socket.assigns.deck))
 
     {:noreply,
      socket
@@ -119,6 +119,18 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
 
   defp page_title(:show), do: "Show Deck"
   defp page_title(:edit), do: "Edit Deck"
+
+  defp add_card_search_opts(%{format: "commander", deck_entries: entries})
+       when is_list(entries) do
+    entries
+    |> Enum.find(&(&1.section == "command"))
+    |> case do
+      nil -> []
+      entry -> [color_identity: entry.card.color_identity || []]
+    end
+  end
+
+  defp add_card_search_opts(_deck), do: []
 
   defp show_path(deck, view_mode, deck_query) do
     params =

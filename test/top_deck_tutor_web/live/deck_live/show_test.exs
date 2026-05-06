@@ -75,4 +75,51 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
     assert [%{card_id: card_id, section: "mainboard", quantity: 1}] = Decks.list_entries(deck)
     assert card_id == card.id
   end
+
+  test "commander decks only show cards within the commander's color identity", %{
+    conn: conn,
+    user: user
+  } do
+    deck = deck_fixture(user, %{format: "commander"})
+
+    commander =
+      card_fixture(%{
+        name: "Alela, Artful Provocateur",
+        normalized_name: "alela artful provocateur",
+        color_identity: ["W", "U", "B"]
+      })
+
+    white_card =
+      card_fixture(%{
+        name: "Light of Hope",
+        normalized_name: "light of hope",
+        color_identity: ["W"]
+      })
+
+    red_card =
+      card_fixture(%{
+        name: "Lightning Bolt",
+        normalized_name: "lightning bolt",
+        color_identity: ["R"]
+      })
+
+    colorless_card =
+      card_fixture(%{
+        name: "Lightwheel Enhancements",
+        normalized_name: "lightwheel enhancements",
+        color_identity: []
+      })
+
+    assert {:ok, _entry} = Decks.set_commander(deck, commander)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    view
+    |> element("#card-search-input")
+    |> render_keyup(%{"value" => "Light"})
+
+    assert has_element?(view, "#card-search-option-#{white_card.id}", white_card.name)
+    assert has_element?(view, "#card-search-option-#{colorless_card.id}", colorless_card.name)
+    refute has_element?(view, "#card-search-option-#{red_card.id}")
+  end
 end

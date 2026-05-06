@@ -37,7 +37,7 @@ defmodule TopDeckTutor.Cards do
     |> Repo.all()
   end
 
-  def search_cards_by_name(term) when is_binary(term) do
+  def search_cards_by_name(term, opts \\ []) when is_binary(term) do
     normalized_term = normalize_name(term)
 
     if String.length(normalized_term) < 3 do
@@ -47,6 +47,7 @@ defmodule TopDeckTutor.Cards do
 
       Card
       |> where([c], like(c.normalized_name, ^prefix))
+      |> maybe_filter_color_identity(Keyword.get(opts, :color_identity))
       |> distinct([c], c.normalized_name)
       |> order_by([c], asc: c.normalized_name, asc: c.name)
       |> limit(20)
@@ -70,6 +71,12 @@ defmodule TopDeckTutor.Cards do
       |> limit(20)
       |> Repo.all()
     end
+  end
+
+  defp maybe_filter_color_identity(query, nil), do: query
+
+  defp maybe_filter_color_identity(query, color_identity) when is_list(color_identity) do
+    where(query, [c], fragment("? <@ ?", c.color_identity, ^color_identity))
   end
 
   def search_scope do

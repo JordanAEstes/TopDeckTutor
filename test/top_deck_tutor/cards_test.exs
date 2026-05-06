@@ -755,6 +755,33 @@ defmodule TopDeckTutor.CardsTest do
 
       assert Cards.search_cards_by_name("Ring") == []
     end
+
+    test "filters results to a color identity when provided" do
+      white_card =
+        card_fixture(%{
+          name: "Light of Hope",
+          normalized_name: "light of hope",
+          color_identity: ["W"]
+        })
+
+      _red_card =
+        card_fixture(%{
+          name: "Lightning Bolt",
+          normalized_name: "lightning bolt",
+          color_identity: ["R"]
+        })
+
+      colorless_card =
+        card_fixture(%{
+          name: "Lightwheel Enhancements",
+          normalized_name: "lightwheel enhancements",
+          color_identity: []
+        })
+
+      results = Cards.search_cards_by_name("Light", color_identity: ["W", "U", "B"])
+
+      assert Enum.map(results, & &1.id) == [white_card.id, colorless_card.id]
+    end
   end
 
   describe "search_legendary_creatures_by_name/1" do
