@@ -75,8 +75,12 @@ defmodule TopDeckTutor.Search.Compiler do
     dynamic([c, ...], ilike(c.mana_cost, ^pattern))
   end
 
+  defp node_dynamic({:color_identity, []}) do
+    dynamic([c, ...], c.color_identity == ^[])
+  end
+
   defp node_dynamic({:color_identity, colors}) do
-    dynamic([c, ...], fragment("? @> ?", c.color_identity, type(^colors, {:array, :string})))
+    dynamic([c, ...], fragment("? <@ ?", c.color_identity, type(^colors, {:array, :string})))
   end
 
   defp node_dynamic({:color, []}) do
@@ -84,7 +88,16 @@ defmodule TopDeckTutor.Search.Compiler do
   end
 
   defp node_dynamic({:color, colors}) do
-    dynamic([c, ...], fragment("? @> ?", c.colors, type(^colors, {:array, :string})))
+    dynamic(
+      [c, ...],
+      fragment(
+        "? @> ? AND ? <@ ?",
+        c.colors,
+        type(^colors, {:array, :string}),
+        c.colors,
+        type(^colors, {:array, :string})
+      )
+    )
   end
 
   defp node_dynamic({:legality, format, status}) do

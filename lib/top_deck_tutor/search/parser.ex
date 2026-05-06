@@ -1,4 +1,6 @@
 defmodule TopDeckTutor.Search.Parser do
+  @color_order %{"W" => 0, "U" => 1, "B" => 2, "R" => 3, "G" => 4}
+
   def parse(tokens) when is_list(tokens) do
     tokens
     |> Enum.reduce_while({:ok, []}, fn token, {:ok, acc} ->
@@ -151,51 +153,34 @@ defmodule TopDeckTutor.Search.Parser do
   defp parse_color("color:"), do: {:error, "Missing value for color:"}
 
   defp parse_color(token) do
-    value =
-      token
-      |> String.replace_prefix("color:", "")
-      |> String.trim()
-      |> String.upcase()
+    with {:ok, value} <- color_value(token, "color:") do
+      case value do
+        [] ->
+          {:ok, {:color, []}}
 
-    cond do
-      value == "" ->
+        colors ->
+          {:ok, {:color, colors}}
+      end
+    else
+      {:error, :missing} ->
         {:error, "Missing value for color:"}
 
-      value == "C" ->
-        {:ok, {:color, []}}
-
-      true ->
-        colors = String.graphemes(value)
-
-        if Enum.all?(colors, &valid_color?/1) do
-          {:ok, {:color, colors}}
-        else
-          {:error, "Invalid color: #{String.downcase(value)}"}
-        end
+      {:error, {:invalid, value}} ->
+        {:error, "Invalid color: #{String.downcase(value)}"}
     end
   end
 
   defp parse_color_identity("ci:"), do: {:error, "Missing value for ci:"}
 
   defp parse_color_identity(token) do
-    value =
-      token
-      |> String.replace_prefix("ci:", "")
-      |> String.trim()
-      |> String.upcase()
-
-    cond do
-      value == "" ->
+    with {:ok, colors} <- color_value(token, "ci:") do
+      {:ok, {:color_identity, colors}}
+    else
+      {:error, :missing} ->
         {:error, "Missing value for ci:"}
 
-      true ->
-        colors = String.graphemes(value)
-
-        if Enum.all?(colors, &valid_color?/1) do
-          {:ok, {:color_identity, colors}}
-        else
-          {:error, "Invalid color identity: #{String.downcase(value)}"}
-        end
+      {:error, {:invalid, value}} ->
+        {:error, "Invalid color identity: #{String.downcase(value)}"}
     end
   end
 
@@ -278,6 +263,31 @@ defmodule TopDeckTutor.Search.Parser do
   defp valid_color?("R"), do: true
   defp valid_color?("G"), do: true
   defp valid_color?(_), do: false
+
+  defp color_value(token, prefix) do
+    value =
+      token
+      |> String.replace_prefix(prefix, "")
+      |> String.trim()
+      |> String.upcase()
+
+    cond do
+      value == "" ->
+        {:error, :missing}
+
+      value == "C" ->
+        {:ok, []}
+
+      true ->
+        colors = value |> String.graphemes() |> Enum.uniq()
+
+        if Enum.all?(colors, &valid_color?/1) do
+          {:ok, Enum.sort_by(colors, &Map.fetch!(@color_order, &1))}
+        else
+          {:error, {:invalid, value}}
+        end
+    end
+  end
 
   defp to_op("<="), do: :<=
   defp to_op(">="), do: :>=

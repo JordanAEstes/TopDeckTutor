@@ -379,7 +379,7 @@ defmodule TopDeckTutor.CardsTest do
       assert Enum.map(restricted_results, & &1.id) == [vintage_restricted_match.id]
     end
 
-    test "search_query/1 supports color filters and keeps color distinct from color identity" do
+    test "search_query/1 treats color filters as exact card color matches" do
       color_match =
         card_fixture(%{
           name: "Color Match",
@@ -414,8 +414,7 @@ defmodule TopDeckTutor.CardsTest do
 
       assert {:ok, white_results} = Cards.search_query("color:w")
 
-      assert Enum.map(white_results, & &1.id) |> Enum.sort() ==
-               Enum.sort([color_match.id, white_match.id])
+      assert Enum.map(white_results, & &1.id) == [white_match.id]
 
       assert {:ok, azorius_results} = Cards.search_query("color:wu")
       assert Enum.map(azorius_results, & &1.id) == [color_match.id]
@@ -424,9 +423,58 @@ defmodule TopDeckTutor.CardsTest do
 
       assert Enum.map(colorless_results, & &1.id) |> Enum.sort() ==
                Enum.sort([colorless_match.id, color_identity_only.id])
+    end
 
-      assert {:ok, ci_results} = Cards.search_query("ci:g")
-      assert Enum.map(ci_results, & &1.id) == [color_identity_only.id]
+    test "search_query/1 treats color identity filters as subset matches" do
+      colorless_match =
+        card_fixture(%{
+          name: "Colorless Identity Match",
+          normalized_name: "colorless identity match",
+          colors: [],
+          color_identity: []
+        })
+
+      white_match =
+        card_fixture(%{
+          name: "White Identity Match",
+          normalized_name: "white identity match",
+          colors: ["W"],
+          color_identity: ["W"]
+        })
+
+      blue_match =
+        card_fixture(%{
+          name: "Blue Identity Match",
+          normalized_name: "blue identity match",
+          colors: ["U"],
+          color_identity: ["U"]
+        })
+
+      azorius_match =
+        card_fixture(%{
+          name: "Azorius Identity Match",
+          normalized_name: "azorius identity match",
+          colors: ["W", "U"],
+          color_identity: ["W", "U"]
+        })
+
+      esper_match =
+        card_fixture(%{
+          name: "Esper Identity Match",
+          normalized_name: "esper identity match",
+          colors: ["W", "U", "B"],
+          color_identity: ["W", "U", "B"]
+        })
+
+      assert {:ok, azorius_results} = Cards.search_query("ci:wu")
+
+      assert Enum.map(azorius_results, & &1.id) |> Enum.sort() ==
+               Enum.sort([colorless_match.id, white_match.id, blue_match.id, azorius_match.id])
+
+      refute esper_match.id in Enum.map(azorius_results, & &1.id)
+
+      assert {:ok, colorless_results} = Cards.search_query("ci:c")
+      assert Enum.map(colorless_results, & &1.id) == [colorless_match.id]
     end
 
     test "search_query/1 supports game filters" do
@@ -690,7 +738,7 @@ defmodule TopDeckTutor.CardsTest do
 
     cards_by_colors
     |> Enum.filter(fn {colors, _card} ->
-      MapSet.subset?(required_set, MapSet.new(colors))
+      MapSet.subset?(MapSet.new(colors), required_set)
     end)
     |> Enum.map(fn {_colors, card} -> card end)
   end
