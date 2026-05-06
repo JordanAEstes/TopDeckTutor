@@ -40,16 +40,18 @@ defmodule TopDeckTutor.Cards do
   def search_cards_by_name(term) when is_binary(term) do
     normalized_term = normalize_name(term)
 
-    Card
-    |> where(
-      [c],
-      ilike(c.name, ^"%#{term}%") or
-        ilike(c.normalized_name, ^"%#{normalized_term}%")
-    )
-    |> distinct([c], c.normalized_name)
-    |> order_by([c], asc: c.normalized_name, asc: c.name)
-    |> limit(50)
-    |> Repo.all()
+    if String.length(normalized_term) < 3 do
+      []
+    else
+      prefix = "#{normalized_term}%"
+
+      Card
+      |> where([c], like(c.normalized_name, ^prefix))
+      |> distinct([c], c.normalized_name)
+      |> order_by([c], asc: c.normalized_name, asc: c.name)
+      |> limit(20)
+      |> Repo.all()
+    end
   end
 
   def search_legendary_creatures_by_name(term) when is_binary(term) do

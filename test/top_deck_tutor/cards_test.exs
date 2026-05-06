@@ -719,6 +719,44 @@ defmodule TopDeckTutor.CardsTest do
     end
   end
 
+  describe "search_cards_by_name/1" do
+    test "does not search until the term has at least three characters" do
+      _card = card_fixture(%{name: "Sol Ring", normalized_name: "sol ring"})
+
+      assert Cards.search_cards_by_name("So") == []
+    end
+
+    test "returns deduped matching card names" do
+      first_printing =
+        card_fixture(%{
+          name: "Sol Ring",
+          normalized_name: "sol ring",
+          set_code: "lea"
+        })
+
+      _second_printing =
+        card_fixture(%{
+          name: "Sol Ring",
+          normalized_name: "sol ring",
+          set_code: "clu"
+        })
+
+      _other =
+        card_fixture(%{
+          name: "Solemn Simulacrum",
+          normalized_name: "solemn simulacrum"
+        })
+
+      assert Enum.map(Cards.search_cards_by_name("Sol R"), & &1.id) == [first_printing.id]
+    end
+
+    test "matches from the beginning of the normalized card name" do
+      _card = card_fixture(%{name: "Sol Ring", normalized_name: "sol ring"})
+
+      assert Cards.search_cards_by_name("Ring") == []
+    end
+  end
+
   describe "search_legendary_creatures_by_name/1" do
     test "does not search until the term has at least three characters" do
       _card =

@@ -40,17 +40,35 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   end
 
   @impl true
-  def handle_event("search_cards", %{"q" => q}, socket) do
-    results =
-      case String.trim(q) do
-        "" -> []
-        term -> Cards.search_cards_by_name(term)
-      end
+  def handle_event("search_cards", %{"value" => q}, socket) do
+    results = Cards.search_cards_by_name(q)
 
     {:noreply,
      socket
      |> assign(:search_term, q)
      |> assign(:search_results, results)}
+  end
+
+  @impl true
+  def handle_event("select_card", %{"id" => id}, socket) do
+    deck = socket.assigns.deck
+    card = Cards.get_card!(id)
+
+    case Decks.add_card(deck, card, %{section: "mainboard", quantity: 1}) do
+      {:ok, _entry} ->
+        refreshed_deck =
+          Decks.get_user_deck_with_entries!(socket.assigns.current_scope.user, deck.id)
+
+        {:noreply,
+         socket
+         |> assign_deck_state(refreshed_deck)
+         |> assign(:search_term, "")
+         |> assign(:search_results, [])
+         |> put_flash(:info, "#{card.name} added to deck")}
+
+      {:error, changeset} ->
+        {:noreply, put_flash(socket, :error, "Could not add card: #{inspect(changeset.errors)}")}
+    end
   end
 
   @impl true
@@ -75,29 +93,6 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   def handle_event("preview_card", %{"card_id" => card_id}, socket) do
     card = TopDeckTutor.Cards.get_card!(card_id)
     {:noreply, assign(socket, :preview_card, card)}
-  end
-
-  def handle_event(
-        "add_card",
-        %{"card_id" => card_id, "section" => section, "quantity" => quantity},
-        socket
-      ) do
-    deck = socket.assigns.deck
-    card = Cards.get_card!(card_id)
-
-    case Decks.add_card(deck, card, %{section: section, quantity: quantity}) do
-      {:ok, _entry} ->
-        refreshed_deck =
-          Decks.get_user_deck_with_entries!(socket.assigns.current_scope.user, deck.id)
-
-        {:noreply,
-         socket
-         |> assign_deck_state(refreshed_deck)
-         |> put_flash(:info, "#{card.name} added to deck")}
-
-      {:error, changeset} ->
-        {:noreply, put_flash(socket, :error, "Could not add card: #{inspect(changeset.errors)}")}
-    end
   end
 
   @impl true
