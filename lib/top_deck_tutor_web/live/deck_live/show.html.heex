@@ -161,6 +161,15 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-3">
+          <button
+            id="open-deck-importer"
+            type="button"
+            phx-click="open_deck_importer"
+            class="app-button-secondary inline-flex items-center gap-2"
+          >
+            <.icon name="hero-arrow-up-tray" class="h-4 w-4" /> Import Decklist
+          </button>
+
           <div class="text-sm app-muted">
             <%= if @deck_query != "" and is_nil(@deck_search_error) do %>
               {@deck_search_match_count} matches
@@ -342,7 +351,7 @@
               <%= if @view_mode == "details" do %>
                 <div class="divide-y">
                   <%= for entry <- entries do %>
-                    <article class="px-5 py-4">
+                    <article id={"deck-entry-#{entry.id}"} class="px-5 py-4">
                       <div class="flex items-start justify-between gap-4">
                         <div class="min-w-0 space-y-1">
                           <div class="text-lg font-medium">
@@ -477,6 +486,91 @@
         current_scope={@current_scope}
         patch={~p"/decks/#{@deck}"}
       />
+    </div>
+  </div>
+
+  <div
+    :if={@import_modal_open?}
+    id="deck-import-modal"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  >
+    <button
+      type="button"
+      phx-click="close_deck_importer"
+      class="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm"
+      aria-label="Close import modal"
+    >
+    </button>
+
+    <div class="app-panel relative z-10 w-full max-w-2xl rounded-3xl p-6 shadow-2xl">
+      <div class="mb-5 flex items-start justify-between gap-4">
+        <div class="space-y-1">
+          <p class="text-xs font-medium uppercase tracking-[0.16em] app-muted">
+            Decklist
+          </p>
+          <h2 class="text-xl font-semibold">Import Decklist</h2>
+          <p class="text-sm app-muted">
+            Paste one card per line. Quantity and set code are optional, like "4 Lightning Bolt (M11)" or "Sol Ring".
+          </p>
+        </div>
+
+        <button
+          type="button"
+          phx-click="close_deck_importer"
+          class="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+          aria-label="Close import modal"
+        >
+          <.icon name="hero-x-mark" class="size-5" />
+        </button>
+      </div>
+
+      <.form
+        for={@import_form}
+        id="deck-import-form"
+        phx-submit="import_decklist"
+        class="space-y-4"
+      >
+        <.input
+          field={@import_form[:decklist]}
+          type="textarea"
+          id="deck-import-textarea"
+          label="Cards"
+          rows="10"
+          placeholder="4 Lightning Bolt (M11)\nSol Ring\n2 Brainstorm\n1 Counterspell (MH2)"
+          class="min-h-64 w-full resize-y rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm leading-6 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-slate-900/40 focus:ring-4 focus:ring-slate-900/10"
+        />
+
+        <p class="text-sm app-muted">
+          Blank lines are ignored. Imports append to the mainboard and existing matching entries are incremented.
+        </p>
+
+        <div
+          :if={@import_errors != []}
+          id="deck-import-errors"
+          class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+        >
+          <p class="font-medium">Import needs attention</p>
+          <ul class="mt-2 space-y-1">
+            <li :for={error <- @import_errors}>
+              line {error.line_number}: {error.message}
+            </li>
+          </ul>
+        </div>
+
+        <div class="flex justify-end gap-3">
+          <button
+            type="button"
+            phx-click="close_deck_importer"
+            class="app-button-secondary"
+          >
+            Cancel
+          </button>
+
+          <button type="submit" class="app-button">
+            Import
+          </button>
+        </div>
+      </.form>
     </div>
   </div>
 </Layouts.app>

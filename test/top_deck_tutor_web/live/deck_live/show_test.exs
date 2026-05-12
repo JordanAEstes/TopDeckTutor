@@ -76,6 +76,80 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
     assert card_id == card.id
   end
 
+  test "shows an import decklist button and opens the import modal", %{
+    conn: conn,
+    user: user
+  } do
+    deck = deck_fixture(user)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    assert has_element?(view, "#open-deck-importer", "Import Decklist")
+
+    view
+    |> element("#open-deck-importer")
+    |> render_click()
+
+    assert has_element?(view, "#deck-import-modal")
+    assert has_element?(view, "#deck-import-form")
+    assert has_element?(view, "#deck-import-textarea")
+  end
+
+  test "successful import updates rendered deck contents", %{
+    conn: conn,
+    user: user
+  } do
+    deck = deck_fixture(user)
+    sol_ring = card_fixture(%{name: "Sol Ring", normalized_name: "sol ring"})
+    brainstorm = card_fixture(%{name: "Brainstorm", normalized_name: "brainstorm"})
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    view
+    |> element("#open-deck-importer")
+    |> render_click()
+
+    view
+    |> element("#deck-import-form")
+    |> render_submit(%{"import" => %{"decklist" => "Sol Ring\n2 Brainstorm"}})
+
+    entries = Decks.list_entries(deck)
+    sol_ring_entry = Enum.find(entries, &(&1.card_id == sol_ring.id))
+    brainstorm_entry = Enum.find(entries, &(&1.card_id == brainstorm.id))
+
+    assert sol_ring_entry.quantity == 1
+    assert brainstorm_entry.quantity == 2
+    assert has_element?(view, "#deck-entry-#{sol_ring_entry.id}", "Sol Ring")
+    assert has_element?(view, "#deck-entry-#{brainstorm_entry.id}", "Brainstorm")
+    refute has_element?(view, "#deck-import-modal")
+  end
+
+  test "import errors are displayed and existing cards remain", %{
+    conn: conn,
+    user: user
+  } do
+    deck = deck_fixture(user)
+    sol_ring = card_fixture(%{name: "Sol Ring", normalized_name: "sol ring"})
+    assert {:ok, existing_entry} = Decks.add_card(deck, sol_ring, %{quantity: 1})
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    view
+    |> element("#open-deck-importer")
+    |> render_click()
+
+    view
+    |> element("#deck-import-form")
+    |> render_submit(%{"import" => %{"decklist" => "2 Missing Card"}})
+
+    assert has_element?(view, "#deck-import-errors", "line 1: card not found")
+    assert has_element?(view, "#deck-import-modal")
+
+    assert [%{id: entry_id, card_id: card_id, quantity: 1}] = Decks.list_entries(deck)
+    assert entry_id == existing_entry.id
+    assert card_id == sol_ring.id
+  end
+
   test "commander decks only show cards within the commander's color identity", %{
     conn: conn,
     user: user

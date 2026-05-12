@@ -3,6 +3,7 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
 
   alias TopDeckTutor.Cards
   alias TopDeckTutor.Decks
+  alias TopDeckTutor.Decks.DeckImporter
   alias TopDeckTutor.Search
   alias TopDeckTutorWeb.DeckLive.FormComponent
 
@@ -34,6 +35,9 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
      |> assign(:search_results, [])
      |> assign(:deck_query, deck_query)
      |> assign(:deck_search_error, nil)
+     |> assign(:import_modal_open?, false)
+     |> assign(:import_errors, [])
+     |> assign(:import_form, import_form())
      |> assign(:selected_section, "mainboard")
      |> assign(:quantity, 1)
      |> assign_deck_state(deck)}
@@ -79,6 +83,50 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   @impl true
   def handle_event("clear_deck_search", _params, socket) do
     {:noreply, clear_deck_search(socket)}
+  end
+
+  @impl true
+  def handle_event("open_deck_importer", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:import_modal_open?, true)
+     |> assign(:import_errors, [])
+     |> assign(:import_form, import_form())}
+  end
+
+  @impl true
+  def handle_event("close_deck_importer", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:import_modal_open?, false)
+     |> assign(:import_errors, [])
+     |> assign(:import_form, import_form())}
+  end
+
+  @impl true
+  def handle_event("import_decklist", %{"import" => %{"decklist" => decklist}}, socket) do
+    deck = socket.assigns.deck
+
+    case DeckImporter.import_text(deck, decklist) do
+      {:ok, %{imported_count: imported_count}} ->
+        refreshed_deck =
+          Decks.get_user_deck_with_entries!(socket.assigns.current_scope.user, deck.id)
+
+        {:noreply,
+         socket
+         |> assign_deck_state(refreshed_deck)
+         |> assign(:import_modal_open?, false)
+         |> assign(:import_errors, [])
+         |> assign(:import_form, import_form())
+         |> put_flash(:info, "Imported #{imported_count} cards")}
+
+      {:error, errors} ->
+        {:noreply,
+         socket
+         |> assign(:import_modal_open?, true)
+         |> assign(:import_errors, errors)
+         |> assign(:import_form, import_form(decklist))}
+    end
   end
 
   @impl true
@@ -217,6 +265,10 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
 
   defp maybe_put_param(params, _key, value, default) when value in [nil, default], do: params
   defp maybe_put_param(params, key, value, _default), do: Keyword.put(params, key, value)
+
+  defp import_form(decklist \\ "") do
+    to_form(%{"decklist" => decklist}, as: :import)
+  end
 
   defp normalize_view_mode("details"), do: "details"
   defp normalize_view_mode("images"), do: "images"
