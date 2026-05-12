@@ -93,6 +93,165 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
     assert has_element?(view, "#deck-import-modal")
     assert has_element?(view, "#deck-import-form")
     assert has_element?(view, "#deck-import-textarea")
+    assert has_element?(view, "#import-decklist-submit.app-button-primary")
+  end
+
+  test "shows an export decklist button and opens the export modal", %{
+    conn: conn,
+    user: user
+  } do
+    deck = deck_fixture(user)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    assert has_element?(view, "#open-deck-exporter", "Export Decklist")
+
+    view
+    |> element("#open-deck-exporter")
+    |> render_click()
+
+    assert has_element?(view, "#deck-export-modal")
+    assert has_element?(view, "#deck-export-options")
+    assert has_element?(view, "#deck-export-textarea")
+    assert has_element?(view, "#copy-deck-export.app-button-primary")
+  end
+
+  test "successful copy closes the export modal and shows a flash", %{conn: conn, user: user} do
+    deck = deck_fixture(user)
+    card = card_fixture(%{name: "Brainstorm", normalized_name: "brainstorm"})
+    {:ok, _entry} = Decks.add_card(deck, card, %{quantity: 2})
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    view
+    |> element("#open-deck-exporter")
+    |> render_click()
+
+    view
+    |> element("#copy-deck-export")
+    |> render_hook("deck_export_copied")
+
+    refute has_element?(view, "#deck-export-modal")
+    assert has_element?(view, "#flash-group", "Decklist copied")
+  end
+
+  test "export modal renders the current decklist text", %{conn: conn, user: user} do
+    deck = deck_fixture(user)
+
+    lightning_bolt =
+      card_fixture(%{
+        name: "Lightning Bolt",
+        normalized_name: "lightning bolt",
+        set_code: "m11",
+        collector_number: "146"
+      })
+
+    sol_ring =
+      card_fixture(%{
+        name: "Sol Ring",
+        normalized_name: "sol ring",
+        set_code: "cmm",
+        collector_number: "396"
+      })
+
+    {:ok, _entry} = Decks.add_card(deck, lightning_bolt, %{quantity: 4})
+    {:ok, _entry} = Decks.add_card(deck, sol_ring, %{quantity: 1})
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    view
+    |> element("#open-deck-exporter")
+    |> render_click()
+
+    assert has_element?(view, "#deck-export-textarea", "4 Lightning Bolt (M11) 146")
+    assert has_element?(view, "#deck-export-textarea", "1 Sol Ring (CMM) 396")
+  end
+
+  test "export options update the rendered output", %{conn: conn, user: user} do
+    deck = deck_fixture(user)
+
+    card =
+      card_fixture(%{
+        name: "Lightning Bolt",
+        normalized_name: "lightning bolt",
+        set_code: "m11",
+        collector_number: "146"
+      })
+
+    {:ok, _entry} = Decks.add_card(deck, card, %{quantity: 4})
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    view
+    |> element("#open-deck-exporter")
+    |> render_click()
+
+    view
+    |> element("#deck-export-options")
+    |> render_change(%{
+      "export" => %{"include_set_code" => "false", "include_collector_number" => "true"}
+    })
+
+    assert has_element?(view, "#deck-export-textarea", "4 Lightning Bolt 146")
+
+    view
+    |> element("#deck-export-options")
+    |> render_change(%{
+      "export" => %{"include_set_code" => "true", "include_collector_number" => "false"}
+    })
+
+    assert has_element?(view, "#deck-export-textarea", "4 Lightning Bolt (M11)")
+
+    view
+    |> element("#deck-export-options")
+    |> render_change(%{
+      "export" => %{"include_set_code" => "false", "include_collector_number" => "false"}
+    })
+
+    assert has_element?(view, "#deck-export-textarea", "4 Lightning Bolt")
+  end
+
+  test "empty deck export renders an empty state", %{conn: conn, user: user} do
+    deck = deck_fixture(user)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    view
+    |> element("#open-deck-exporter")
+    |> render_click()
+
+    assert has_element?(view, "#deck-export-empty", "This deck has no cards to export.")
+    assert has_element?(view, "#deck-export-textarea")
+  end
+
+  test "export flow does not modify deck contents", %{conn: conn, user: user} do
+    deck = deck_fixture(user)
+
+    card =
+      card_fixture(%{
+        name: "Brainstorm",
+        normalized_name: "brainstorm",
+        set_code: "mh2",
+        collector_number: "267"
+      })
+
+    {:ok, entry} = Decks.add_card(deck, card, %{quantity: 2})
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    view
+    |> element("#open-deck-exporter")
+    |> render_click()
+
+    view
+    |> element("#deck-export-options")
+    |> render_change(%{
+      "export" => %{"include_set_code" => "false", "include_collector_number" => "false"}
+    })
+
+    assert [%{id: entry_id, card_id: card_id, quantity: 2}] = Decks.list_entries(deck)
+    assert entry_id == entry.id
+    assert card_id == card.id
   end
 
   test "shows a sort by type toggle and leaves deck entries ungrouped by default", %{
@@ -193,6 +352,18 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
     assert has_element?(view, "#deck-list-column-1 #deck-entry-#{entries_by_name["Opt"].id}")
     assert has_element?(view, "#deck-list-column-1 #deck-type-group-mainboard-Land", "Land")
     assert has_element?(view, "#deck-list-column-1 #deck-entry-#{entries_by_name["Island"].id}")
+  end
+
+  test "card preview hook ignores missing card ids", %{conn: conn, user: user} do
+    {deck, entries_by_name} = deck_with_type_entries(user)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}?view=list")
+
+    view
+    |> element("#deck-entry-#{entries_by_name["Island"].id}")
+    |> render_hook("preview_card", %{})
+
+    assert has_element?(view, "#deck-list-columns")
   end
 
   test "list view flows sections through shared columns and wraps after fifty card entries", %{

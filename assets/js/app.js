@@ -14,7 +14,9 @@ let Hooks = {
   CardPreview: {
     mounted() {
       this.onEnter = () => {
-        this.pushEvent("preview_card", { card_id: this.el.dataset.cardId })
+        if (this.el.dataset.cardId) {
+          this.pushEvent("preview_card", { card_id: this.el.dataset.cardId })
+        }
       }
 
       this.el.addEventListener("mouseenter", this.onEnter)
@@ -23,6 +25,27 @@ let Hooks = {
     destroyed() {
       if (this.onEnter) {
         this.el.removeEventListener("mouseenter", this.onEnter)
+      }
+    }
+  },
+
+  CopyToClipboard: {
+    mounted() {
+      this.onClick = async () => {
+        const target = document.getElementById(this.el.dataset.copyTarget)
+
+        if (target && navigator.clipboard) {
+          await navigator.clipboard.writeText(target.value)
+          this.pushEvent("deck_export_copied", {})
+        }
+      }
+
+      this.el.addEventListener("click", this.onClick)
+    },
+
+    destroyed() {
+      if (this.onClick) {
+        this.el.removeEventListener("click", this.onClick)
       }
     }
   }

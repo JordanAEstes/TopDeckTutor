@@ -3,6 +3,7 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
 
   alias TopDeckTutor.Cards
   alias TopDeckTutor.Decks
+  alias TopDeckTutor.Decks.DeckExporter
   alias TopDeckTutor.Decks.DeckImporter
   alias TopDeckTutor.Search
   alias TopDeckTutorWeb.DeckLive.FormComponent
@@ -41,6 +42,9 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
      |> assign(:import_modal_open?, false)
      |> assign(:import_errors, [])
      |> assign(:import_form, import_form())
+     |> assign(:export_modal_open?, false)
+     |> assign(:export_include_set_code?, true)
+     |> assign(:export_include_collector_number?, true)
      |> assign(:selected_section, "mainboard")
      |> assign(:quantity, 1)
      |> assign_deck_state(deck)}
@@ -107,6 +111,41 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   end
 
   @impl true
+  def handle_event("open_deck_exporter", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:export_modal_open?, true)
+     |> assign(:export_include_set_code?, true)
+     |> assign(:export_include_collector_number?, true)
+     |> assign_export_state()}
+  end
+
+  @impl true
+  def handle_event("close_deck_exporter", _params, socket) do
+    {:noreply, assign(socket, :export_modal_open?, false)}
+  end
+
+  @impl true
+  def handle_event("deck_export_copied", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:export_modal_open?, false)
+     |> put_flash(:info, "Decklist copied")}
+  end
+
+  @impl true
+  def handle_event("update_deck_export_options", %{"export" => export_params}, socket) do
+    {:noreply,
+     socket
+     |> assign(:export_include_set_code?, truthy_param?(export_params["include_set_code"]))
+     |> assign(
+       :export_include_collector_number?,
+       truthy_param?(export_params["include_collector_number"])
+     )
+     |> assign_export_state()}
+  end
+
+  @impl true
   def handle_event("import_decklist", %{"import" => %{"decklist" => decklist}}, socket) do
     deck = socket.assigns.deck
 
@@ -168,6 +207,9 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   end
 
   @impl true
+  def handle_event("preview_card", _params, socket), do: {:noreply, socket}
+
+  @impl true
   def handle_event("remove_entry", %{"id" => id}, socket) do
     entry = TopDeckTutor.Decks.get_deck_entry!(socket.assigns.deck, id)
 
@@ -218,7 +260,23 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
     socket
     |> assign(:deck, deck)
     |> assign(:entries_by_section, Decks.entries_by_section(deck))
+    |> assign_export_state()
     |> apply_deck_search(socket.assigns[:deck_query] || "")
+  end
+
+  defp assign_export_state(socket) do
+    include_set_code? = socket.assigns[:export_include_set_code?] != false
+    include_collector_number? = socket.assigns[:export_include_collector_number?] != false
+
+    export_text =
+      DeckExporter.export_text(socket.assigns.deck,
+        include_set_code: include_set_code?,
+        include_collector_number: include_collector_number?
+      )
+
+    socket
+    |> assign(:export_text, export_text)
+    |> assign(:export_form, export_form(include_set_code?, include_collector_number?))
   end
 
   defp apply_deck_search(socket, ""), do: clear_deck_search(socket)
@@ -294,6 +352,19 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   defp import_form(decklist \\ "") do
     to_form(%{"decklist" => decklist}, as: :import)
   end
+
+  defp export_form(include_set_code?, include_collector_number?) do
+    to_form(
+      %{
+        "include_set_code" => include_set_code?,
+        "include_collector_number" => include_collector_number?
+      },
+      as: :export
+    )
+  end
+
+  defp truthy_param?("true"), do: true
+  defp truthy_param?(_), do: false
 
   defp normalize_view_mode("details"), do: "details"
   defp normalize_view_mode("images"), do: "images"
