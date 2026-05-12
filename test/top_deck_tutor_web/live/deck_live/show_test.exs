@@ -95,6 +95,145 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
     assert has_element?(view, "#deck-import-textarea")
   end
 
+  test "shows a sort by type toggle and leaves deck entries ungrouped by default", %{
+    conn: conn,
+    user: user
+  } do
+    {deck, _entries_by_name} = deck_with_type_entries(user)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    assert has_element?(view, "#deck-sort-type-toggle", "Sort by type")
+    refute has_element?(view, "#deck-type-group-mainboard-Creature")
+  end
+
+  test "toggling sort by type groups details view entries within deck sections", %{
+    conn: conn,
+    user: user
+  } do
+    {deck, _entries_by_name} = deck_with_type_entries(user)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    view
+    |> element("#deck-sort-type-toggle")
+    |> render_click()
+
+    assert_patch(view, ~p"/decks/#{deck}?sort=type")
+    assert has_element?(view, "#deck-section-mainboard", "mainboard")
+    assert has_element?(view, "#deck-type-group-mainboard-Creature", "Creature")
+    assert has_element?(view, "#deck-type-group-mainboard-Creature", "2 cards")
+    assert has_element?(view, "#deck-type-group-mainboard-Instant", "Instant")
+    assert has_element?(view, "#deck-type-group-mainboard-Instant", "1 card")
+    assert has_element?(view, "#deck-type-group-mainboard-Land", "Land")
+    assert has_element?(view, "#deck-type-group-mainboard-Land", "1 card")
+    assert has_element?(view, "#deck-type-group-sideboard-Artifact", "Artifact")
+    assert has_element?(view, "#deck-type-group-sideboard-Artifact", "1 card")
+    refute has_element?(view, "#deck-type-group-mainboard-Planeswalker")
+  end
+
+  test "sort by type groups image view entries", %{conn: conn, user: user} do
+    {deck, entries_by_name} = deck_with_type_entries(user)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}?view=images")
+
+    view
+    |> element("#deck-sort-type-toggle")
+    |> render_click()
+
+    assert_patch(view, ~p"/decks/#{deck}?sort=type&view=images")
+
+    assert has_element?(
+             view,
+             "#deck-type-group-mainboard-Creature #deck-entry-#{entries_by_name["Solemn Simulacrum"].id}"
+           )
+
+    assert has_element?(view, "#deck-type-group-mainboard-Creature", "2 cards")
+
+    assert has_element?(
+             view,
+             "#deck-type-group-mainboard-Instant #deck-entry-#{entries_by_name["Opt"].id}"
+           )
+
+    assert has_element?(
+             view,
+             "#deck-type-group-mainboard-Land #deck-entry-#{entries_by_name["Island"].id}"
+           )
+  end
+
+  test "sort by type groups list view entries", %{conn: conn, user: user} do
+    {deck, entries_by_name} = deck_with_type_entries(user)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}?view=list")
+
+    view
+    |> element("#deck-sort-type-toggle")
+    |> render_click()
+
+    assert_patch(view, ~p"/decks/#{deck}?sort=type&view=list")
+
+    assert has_element?(
+             view,
+             "#deck-list-column-1 #deck-type-group-mainboard-Creature",
+             "Creature"
+           )
+
+    assert has_element?(
+             view,
+             "#deck-list-column-1 #deck-type-group-mainboard-Creature",
+             "2 cards"
+           )
+
+    assert has_element?(
+             view,
+             "#deck-list-column-1 #deck-entry-#{entries_by_name["Solemn Simulacrum"].id}"
+           )
+
+    assert has_element?(view, "#deck-list-column-1 #deck-type-group-mainboard-Instant", "Instant")
+    assert has_element?(view, "#deck-list-column-1 #deck-entry-#{entries_by_name["Opt"].id}")
+    assert has_element?(view, "#deck-list-column-1 #deck-type-group-mainboard-Land", "Land")
+    assert has_element?(view, "#deck-list-column-1 #deck-entry-#{entries_by_name["Island"].id}")
+  end
+
+  test "list view flows sections through shared columns and wraps after fifty card entries", %{
+    conn: conn,
+    user: user
+  } do
+    deck = deck_fixture(user, %{format: "standard"})
+
+    mainboard_entries =
+      for index <- 1..51 do
+        card =
+          card_fixture(%{
+            name: "Mainboard Card #{index}",
+            normalized_name: "mainboard card #{index}",
+            type_line: "Creature"
+          })
+
+        {:ok, entry} = Decks.add_card(deck, card, %{section: "mainboard"})
+        entry
+      end
+
+    sideboard_card =
+      card_fixture(%{
+        name: "Sideboard Card",
+        normalized_name: "sideboard card",
+        type_line: "Instant"
+      })
+
+    {:ok, sideboard_entry} = Decks.add_card(deck, sideboard_card, %{section: "sideboard"})
+    first_mainboard_entry = List.first(mainboard_entries)
+    fifty_first_mainboard_entry = List.last(mainboard_entries)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}?view=list")
+
+    assert has_element?(view, "#deck-list-column-1 #deck-section-heading-mainboard", "mainboard")
+    assert has_element?(view, "#deck-list-column-1 #deck-entry-#{first_mainboard_entry.id}")
+    assert has_element?(view, "#deck-list-column-2 #deck-entry-#{fifty_first_mainboard_entry.id}")
+    assert has_element?(view, "#deck-list-column-2 #deck-section-heading-sideboard", "sideboard")
+    assert has_element?(view, "#deck-list-column-2 #deck-entry-#{sideboard_entry.id}")
+  end
+
   test "successful import updates rendered deck contents", %{
     conn: conn,
     user: user
@@ -195,5 +334,51 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
     assert has_element?(view, "#card-search-option-#{white_card.id}", white_card.name)
     assert has_element?(view, "#card-search-option-#{colorless_card.id}", colorless_card.name)
     refute has_element?(view, "#card-search-option-#{red_card.id}")
+  end
+
+  defp deck_with_type_entries(user) do
+    deck = deck_fixture(user, %{format: "standard"})
+
+    land =
+      card_fixture(%{
+        name: "Island",
+        normalized_name: "island",
+        type_line: "Basic Land"
+      })
+
+    instant =
+      card_fixture(%{
+        name: "Opt",
+        normalized_name: "opt",
+        type_line: "Instant"
+      })
+
+    creature =
+      card_fixture(%{
+        name: "Solemn Simulacrum",
+        normalized_name: "solemn simulacrum",
+        type_line: "Artifact Creature — Golem"
+      })
+
+    artifact =
+      card_fixture(%{
+        name: "Sol Ring",
+        normalized_name: "sol ring",
+        type_line: "Artifact"
+      })
+
+    {:ok, land_entry} = Decks.add_card(deck, land, %{section: "mainboard"})
+    {:ok, instant_entry} = Decks.add_card(deck, instant, %{section: "mainboard"})
+    {:ok, creature_entry} = Decks.add_card(deck, creature, %{section: "mainboard", quantity: 2})
+    {:ok, artifact_entry} = Decks.add_card(deck, artifact, %{section: "sideboard"})
+
+    entries_by_name = %{
+      "Island" => land_entry,
+      "Opt" => instant_entry,
+      "Solemn Simulacrum" => creature_entry,
+      "Sol Ring" => artifact_entry
+    }
+
+    {deck, entries_by_name}
   end
 end
