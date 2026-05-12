@@ -170,6 +170,15 @@
             <.icon name="hero-arrow-up-tray" class="h-4 w-4" /> Import Decklist
           </button>
 
+          <button
+            id="open-deck-exporter"
+            type="button"
+            phx-click="open_deck_exporter"
+            class="app-button-secondary inline-flex items-center gap-2"
+          >
+            <.icon name="hero-arrow-down-tray" class="h-4 w-4" /> Export Decklist
+          </button>
+
           <div class="text-sm app-muted">
             <%= if @deck_query != "" and is_nil(@deck_search_error) do %>
               {@deck_search_match_count} matches
@@ -660,6 +669,108 @@
   </div>
 
   <div
+    :if={@export_modal_open?}
+    id="deck-export-modal"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  >
+    <button
+      type="button"
+      phx-click="close_deck_exporter"
+      class="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm"
+      aria-label="Close export modal"
+    >
+    </button>
+
+    <div class="app-panel relative z-10 w-full max-w-2xl rounded-3xl p-6 shadow-2xl">
+      <div class="mb-5 flex items-start justify-between gap-4">
+        <div class="space-y-1">
+          <p class="text-xs font-medium uppercase tracking-[0.16em] app-muted">
+            Decklist
+          </p>
+          <h2 class="text-xl font-semibold">Export Decklist</h2>
+          <p class="text-sm app-muted">
+            Copy one card per line in the format "4 Lightning Bolt (M11) 146".
+          </p>
+        </div>
+
+        <button
+          type="button"
+          phx-click="close_deck_exporter"
+          class="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+          aria-label="Close export modal"
+        >
+          <.icon name="hero-x-mark" class="size-5" />
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <.form
+          for={@export_form}
+          id="deck-export-options"
+          phx-change="update_deck_export_options"
+          class="grid gap-3 sm:grid-cols-2"
+        >
+          <.input
+            field={@export_form[:include_set_code]}
+            type="checkbox"
+            id="deck-export-include-set-code"
+            label="Include set code"
+            class="size-4 rounded border-slate-300 text-slate-900 transition focus:ring-4 focus:ring-slate-900/10"
+          />
+
+          <.input
+            field={@export_form[:include_collector_number]}
+            type="checkbox"
+            id="deck-export-include-collector-number"
+            label="Include collector number"
+            class="size-4 rounded border-slate-300 text-slate-900 transition focus:ring-4 focus:ring-slate-900/10"
+          />
+        </.form>
+
+        <div
+          :if={@export_text == ""}
+          id="deck-export-empty"
+          class="rounded-xl border border-dashed border-[var(--border)] bg-white/70 p-4 text-sm app-muted"
+        >
+          This deck has no cards to export.
+        </div>
+
+        <div class="space-y-2">
+          <label for="deck-export-textarea" class="block text-sm font-medium">
+            Exported decklist
+          </label>
+          <textarea
+            id="deck-export-textarea"
+            readonly
+            rows="10"
+            class="min-h-64 w-full resize-y rounded-xl border border-[var(--border)] bg-white px-4 py-3 font-mono text-sm leading-6 shadow-sm outline-none transition focus:border-slate-900/40 focus:ring-4 focus:ring-slate-900/10"
+          >{@export_text}</textarea>
+        </div>
+
+        <div class="flex justify-end gap-3">
+          <button
+            type="button"
+            phx-click="close_deck_exporter"
+            class="app-button-secondary"
+          >
+            Close
+          </button>
+
+          <button
+            id="copy-deck-export"
+            type="button"
+            phx-hook="CopyToClipboard"
+            data-copy-target="deck-export-textarea"
+            class="app-button-primary inline-flex items-center gap-2"
+          >
+            <.icon name="hero-clipboard-document" class="h-4 w-4" /> Copy
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
     :if={@import_modal_open?}
     id="deck-import-modal"
     class="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -736,7 +847,7 @@
             Cancel
           </button>
 
-          <button type="submit" class="app-button">
+          <button id="import-decklist-submit" type="submit" class="app-button-primary">
             Import
           </button>
         </div>

@@ -25,6 +25,27 @@ let Hooks = {
         this.el.removeEventListener("mouseenter", this.onEnter)
       }
     }
+  },
+
+  CopyToClipboard: {
+    mounted() {
+      this.onClick = async () => {
+        const target = document.getElementById(this.el.dataset.copyTarget)
+
+        if (target && navigator.clipboard) {
+          await navigator.clipboard.writeText(target.value)
+          this.pushEvent("deck_export_copied", {})
+        }
+      }
+
+      this.el.addEventListener("click", this.onClick)
+    },
+
+    destroyed() {
+      if (this.onClick) {
+        this.el.removeEventListener("click", this.onClick)
+      }
+    }
   }
 }
 
