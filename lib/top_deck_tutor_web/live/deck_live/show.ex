@@ -40,17 +40,35 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   end
 
   @impl true
-  def handle_event("search_cards", %{"q" => q}, socket) do
-    results =
-      case String.trim(q) do
-        "" -> []
-        term -> Cards.search_cards_by_name(term)
-      end
+  def handle_event("search_cards", %{"value" => q}, socket) do
+    results = Cards.search_cards_by_name(q, add_card_search_opts(socket.assigns.deck))
 
     {:noreply,
      socket
      |> assign(:search_term, q)
      |> assign(:search_results, results)}
+  end
+
+  @impl true
+  def handle_event("select_card", %{"id" => id}, socket) do
+    deck = socket.assigns.deck
+    card = Cards.get_card!(id)
+
+    case Decks.add_card(deck, card, %{section: "mainboard", quantity: 1}) do
+      {:ok, _entry} ->
+        refreshed_deck =
+          Decks.get_user_deck_with_entries!(socket.assigns.current_scope.user, deck.id)
+
+        {:noreply,
+         socket
+         |> assign_deck_state(refreshed_deck)
+         |> assign(:search_term, "")
+         |> assign(:search_results, [])
+         |> put_flash(:info, "#{card.name} added to deck")}
+
+      {:error, changeset} ->
+        {:noreply, put_flash(socket, :error, "Could not add card: #{inspect(changeset.errors)}")}
+    end
   end
 
   @impl true
@@ -77,29 +95,6 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
     {:noreply, assign(socket, :preview_card, card)}
   end
 
-  def handle_event(
-        "add_card",
-        %{"card_id" => card_id, "section" => section, "quantity" => quantity},
-        socket
-      ) do
-    deck = socket.assigns.deck
-    card = Cards.get_card!(card_id)
-
-    case Decks.add_card(deck, card, %{section: section, quantity: quantity}) do
-      {:ok, _entry} ->
-        refreshed_deck =
-          Decks.get_user_deck_with_entries!(socket.assigns.current_scope.user, deck.id)
-
-        {:noreply,
-         socket
-         |> assign_deck_state(refreshed_deck)
-         |> put_flash(:info, "#{card.name} added to deck")}
-
-      {:error, changeset} ->
-        {:noreply, put_flash(socket, :error, "Could not add card: #{inspect(changeset.errors)}")}
-    end
-  end
-
   @impl true
   def handle_event("remove_entry", %{"id" => id}, socket) do
     entry = TopDeckTutor.Decks.get_deck_entry!(socket.assigns.deck, id)
@@ -124,6 +119,18 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
 
   defp page_title(:show), do: "Show Deck"
   defp page_title(:edit), do: "Edit Deck"
+
+  defp add_card_search_opts(%{format: "commander", deck_entries: entries})
+       when is_list(entries) do
+    entries
+    |> Enum.find(&(&1.section == "command"))
+    |> case do
+      nil -> []
+      entry -> [color_identity: entry.card.color_identity || []]
+    end
+  end
+
+  defp add_card_search_opts(_deck), do: []
 
   defp show_path(deck, view_mode, deck_query) do
     params =

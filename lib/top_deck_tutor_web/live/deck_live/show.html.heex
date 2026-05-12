@@ -57,73 +57,48 @@
           </p>
         </div>
 
-        <.form for={%{}} id="card-search-form" phx-change="search_cards" class="space-y-3">
-          <.input
-            name="q"
-            value={@search_term}
-            type="text"
-            label="Search cards"
-            placeholder="Try: Sol Ring, Brushland, creature, draw..."
-            autocomplete="off"
-            class="app-input"
-          />
-        </.form>
+        <div id="add-card-picker" class="space-y-3">
+          <div class="relative">
+            <label for="card-search-input" class="mb-1 block text-sm font-medium">
+              Search cards
+            </label>
 
-        <%= if @search_term != "" and @search_results == [] do %>
-          <div class="app-panel border-dashed p-4 text-sm app-muted">
-            No cards found.
+            <input
+              id="card-search-input"
+              name="card_search"
+              type="text"
+              value={@search_term}
+              phx-keyup="search_cards"
+              placeholder="Try: Sol Ring, Brushland, Opt..."
+              autocomplete="off"
+              class="app-input w-full"
+            />
+
+            <div
+              :if={@search_results != []}
+              id="card-search-results"
+              class="absolute z-20 mt-2 max-h-56 w-full overflow-y-auto rounded-lg border border-[var(--border)] bg-white shadow-lg"
+            >
+              <button
+                :for={card <- @search_results}
+                id={"card-search-option-#{card.id}"}
+                type="button"
+                phx-click="select_card"
+                phx-value-id={card.id}
+                class="block w-full px-3 py-2 text-left text-sm transition hover:bg-zinc-100"
+              >
+                {card.name}
+              </button>
+            </div>
           </div>
-        <% end %>
+        </div>
 
-        <%= if @search_results != [] do %>
-          <div class="space-y-3">
-            <%= for card <- @search_results do %>
-              <article class="app-panel-muted p-4">
-                <.link navigate={~p"/cards/#{card}"} class="font-medium hover:underline">
-                  {card.name}
-                </.link>
-
-                <.form
-                  for={%{}}
-                  id={"add-card-#{card.id}"}
-                  phx-submit="add_card"
-                  class="mt-4 flex flex-wrap items-end gap-3"
-                >
-                  <input type="hidden" name="card_id" value={card.id} />
-
-                  <div>
-                    <label class="mb-1 block text-sm font-medium">Section</label>
-                    <select name="section" class="app-input">
-                      <option value="mainboard">Mainboard</option>
-                      <option value="sideboard">Sideboard</option>
-                      <option value="maybeboard">Maybeboard</option>
-                      <option value="command">Command</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="mb-1 block text-sm font-medium">Qty</label>
-                    <input
-                      type="number"
-                      name="quantity"
-                      min="1"
-                      value="1"
-                      class="app-input w-20"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    phx-disable-with="Adding..."
-                    class="app-button-primary"
-                  >
-                    Add to deck
-                  </button>
-                </.form>
-              </article>
-            <% end %>
-          </div>
-        <% end %>
+        <div
+          :if={@search_term != "" and @search_results == []}
+          class="app-panel border-dashed p-4 text-sm app-muted"
+        >
+          No cards found.
+        </div>
       </div>
 
       <div class="app-panel flex h-full flex-col justify-between gap-6 p-5">

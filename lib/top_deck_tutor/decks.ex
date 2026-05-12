@@ -85,6 +85,20 @@ defmodule TopDeckTutor.Decks do
     end
   end
 
+  def set_commander(%Deck{id: deck_id} = deck, %Card{} = card) do
+    Repo.transaction(fn ->
+      DeckEntry
+      |> where([de], de.deck_id == ^deck_id and de.section == "command")
+      |> Repo.all()
+      |> Enum.each(&Repo.delete!/1)
+
+      case add_card(deck, card, %{section: "command", quantity: 1}) do
+        {:ok, entry} -> entry
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
+
   def search_cards_in_deck(%Deck{id: deck_id}, term) when is_binary(term) do
     trimmed = String.trim(term)
 
