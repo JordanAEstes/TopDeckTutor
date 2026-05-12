@@ -510,7 +510,7 @@
           </p>
           <h2 class="text-xl font-semibold">Import Decklist</h2>
           <p class="text-sm app-muted">
-            Paste one card per line. Quantity and set code are optional, like "4 Lightning Bolt (M11)" or "Sol Ring".
+            Paste one card per line. Quantity, set code, and collector number are optional, like "4 Lightning Bolt (M11) 149" or "Sol Ring".
           </p>
         </div>
 
@@ -536,7 +536,7 @@
           id="deck-import-textarea"
           label="Cards"
           rows="10"
-          placeholder="4 Lightning Bolt (M11)\nSol Ring\n2 Brainstorm\n1 Counterspell (MH2)"
+          placeholder="4 Lightning Bolt (M11) 149\nSol Ring\n2 Brainstorm\n1 Counterspell (MH2) 50"
           class="min-h-64 w-full resize-y rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm leading-6 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-slate-900/40 focus:ring-4 focus:ring-slate-900/10"
         />
 
@@ -552,7 +552,7 @@
           <p class="font-medium">Import needs attention</p>
           <ul class="mt-2 space-y-1">
             <li :for={error <- @import_errors}>
-              line {error.line_number}: {error.message}
+              line {error.line_number} ({error.card_text}): {error.message}
             </li>
           </ul>
         </div>

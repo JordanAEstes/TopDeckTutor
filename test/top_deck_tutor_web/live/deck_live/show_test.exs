@@ -142,7 +142,7 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
     |> element("#deck-import-form")
     |> render_submit(%{"import" => %{"decklist" => "2 Missing Card"}})
 
-    assert has_element?(view, "#deck-import-errors", "line 1: card not found")
+    assert has_element?(view, "#deck-import-errors", "line 1 (Missing Card): card not found")
     assert has_element?(view, "#deck-import-modal")
 
     assert [%{id: entry_id, card_id: card_id, quantity: 1}] = Decks.list_entries(deck)

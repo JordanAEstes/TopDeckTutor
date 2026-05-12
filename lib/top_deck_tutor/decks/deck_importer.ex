@@ -35,34 +35,35 @@ defmodule TopDeckTutor.Decks.DeckImporter do
   end
 
   defp parse_line(line, line_number) do
-    line = String.trim(line)
+    raw_line = String.trim(line)
 
-    if line == "" do
+    if raw_line == "" do
       {:ok, nil}
     else
-      {quantity, name_with_set} = parse_quantity(line)
+      {quantity, name_with_set} = parse_quantity(raw_line)
+      {card_name, set_code, collector_number} = parse_printing(name_with_set)
+      card_text = error_card_text(card_name, raw_line)
 
       cond do
         quantity < 1 ->
-          {:error, %{line_number: line_number, message: "invalid quantity"}}
+          {:error, import_error(line_number, card_text, "invalid quantity")}
 
         String.trim(name_with_set) == "" ->
-          {:error, %{line_number: line_number, message: "malformed line"}}
+          {:error, import_error(line_number, card_text, "malformed line")}
+
+        card_name == "" ->
+          {:error, import_error(line_number, card_text, "malformed line")}
 
         true ->
-          {card_name, set_code} = parse_set_code(name_with_set)
-
-          if card_name == "" do
-            {:error, %{line_number: line_number, message: "malformed line"}}
-          else
-            {:ok,
-             %{
-               line_number: line_number,
-               quantity: quantity,
-               card_name: card_name,
-               set_code: set_code
-             }}
-          end
+          {:ok,
+           %{
+             line_number: line_number,
+             raw_line: raw_line,
+             quantity: quantity,
+             card_name: card_name,
+             set_code: set_code,
+             collector_number: collector_number
+           }}
       end
     end
   end
@@ -75,10 +76,16 @@ defmodule TopDeckTutor.Decks.DeckImporter do
     end
   end
 
-  defp parse_set_code(name_with_set) do
-    case Regex.run(~r/^(.*?)\s+\(([A-Za-z0-9]+)\)$/u, name_with_set) do
-      [_, card_name, set_code] -> {String.trim(card_name), String.downcase(set_code)}
-      _ -> {String.trim(name_with_set), nil}
+  defp parse_printing(name_with_set) do
+    case Regex.run(~r/^(.*?)\s+\(([A-Za-z0-9]+)\)(?:\s+(\S+))?$/u, name_with_set) do
+      [_, card_name, set_code] ->
+        {String.trim(card_name), String.downcase(set_code), nil}
+
+      [_, card_name, set_code, collector_number] ->
+        {String.trim(card_name), String.downcase(set_code), collector_number}
+
+      _ ->
+        {String.trim(name_with_set), nil, nil}
     end
   end
 
@@ -99,7 +106,7 @@ defmodule TopDeckTutor.Decks.DeckImporter do
 
   defp resolve_card(%{set_code: nil} = row) do
     case preferred_printing(row.card_name) do
-      nil -> {:error, %{line_number: row.line_number, message: "card not found"}}
+      nil -> {:error, import_error(row, "card not found")}
       %Card{} = card -> {:ok, card}
     end
   end
@@ -110,23 +117,74 @@ defmodule TopDeckTutor.Decks.DeckImporter do
     card =
       Card
       |> where([c], c.normalized_name == ^normalized_name and c.set_code == ^set_code)
-      |> order_by([c], asc: c.id)
-      |> limit(1)
-      |> Repo.one()
+      |> maybe_filter_collector_number(row.collector_number)
+      |> Repo.all()
+      |> preferred_set_printing()
 
     cond do
       card ->
         {:ok, card}
 
       card_name_exists?(normalized_name) ->
-        {:error,
-         %{
-           line_number: row.line_number,
-           message: "no printing found for set #{String.upcase(set_code)}"
-         }}
+        {:error, import_error(row, "no printing found for set #{String.upcase(set_code)}")}
 
       true ->
-        {:error, %{line_number: row.line_number, message: "card not found"}}
+        {:error, import_error(row, "card not found")}
+    end
+  end
+
+  defp import_error(
+         %{line_number: line_number, card_name: card_name, raw_line: raw_line},
+         message
+       ) do
+    import_error(line_number, error_card_text(card_name, raw_line), message)
+  end
+
+  defp import_error(line_number, card_text, message) do
+    %{line_number: line_number, card_text: card_text, message: message}
+  end
+
+  defp error_card_text(card_name, raw_line) do
+    card_name
+    |> String.trim()
+    |> case do
+      "" -> raw_line
+      card_name -> card_name
+    end
+  end
+
+  defp maybe_filter_collector_number(query, nil), do: query
+
+  defp maybe_filter_collector_number(query, collector_number) do
+    where(query, [c], c.collector_number == ^collector_number)
+  end
+
+  defp preferred_set_printing([]), do: nil
+
+  defp preferred_set_printing(cards) do
+    Enum.min_by(cards, &collector_number_sort_key/1)
+  end
+
+  defp collector_number_sort_key(%Card{collector_number: collector_number, id: id}) do
+    {collector_number_number(collector_number), collector_number_suffix(collector_number),
+     collector_number || "", id}
+  end
+
+  defp collector_number_number(nil), do: 1_000_000_000
+
+  defp collector_number_number(collector_number) do
+    case Regex.run(~r/^\d+/, collector_number) do
+      [number] -> String.to_integer(number)
+      nil -> 1_000_000_000
+    end
+  end
+
+  defp collector_number_suffix(nil), do: ""
+
+  defp collector_number_suffix(collector_number) do
+    case Regex.run(~r/^\d+(.*)$/, collector_number) do
+      [_, suffix] -> suffix
+      nil -> collector_number
     end
   end
 

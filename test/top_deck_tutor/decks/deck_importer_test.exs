@@ -16,7 +16,22 @@ defmodule TopDeckTutor.Decks.DeckImporterTest do
                  line_number: 1,
                  quantity: 4,
                  card_name: "Lightning Bolt",
-                 set_code: "m11"
+                 set_code: "m11",
+                 collector_number: nil
+               }
+             ] = rows
+    end
+
+    test "parses quantity, card name, set code, and collector number" do
+      assert {:ok, rows} = DeckImporter.parse_text("4 Lightning Bolt (M11) 149")
+
+      assert [
+               %{
+                 line_number: 1,
+                 quantity: 4,
+                 card_name: "Lightning Bolt",
+                 set_code: "m11",
+                 collector_number: "149"
                }
              ] = rows
     end
@@ -29,7 +44,8 @@ defmodule TopDeckTutor.Decks.DeckImporterTest do
                  line_number: 1,
                  quantity: 1,
                  card_name: "Sol Ring",
-                 set_code: nil
+                 set_code: nil,
+                 collector_number: nil
                }
              ] = rows
     end
@@ -45,8 +61,8 @@ defmodule TopDeckTutor.Decks.DeckImporterTest do
       assert {:error, errors} = DeckImporter.parse_text("4\n0 Sol Ring\n")
 
       assert errors == [
-               %{line_number: 1, message: "malformed line"},
-               %{line_number: 2, message: "invalid quantity"}
+               %{line_number: 1, card_text: "4", message: "malformed line"},
+               %{line_number: 2, card_text: "Sol Ring", message: "invalid quantity"}
              ]
     end
   end
@@ -76,6 +92,57 @@ defmodule TopDeckTutor.Decks.DeckImporterTest do
 
       assert [%{card_id: card_id, quantity: 4, section: "mainboard"}] = Decks.list_entries(deck)
       assert card_id == m11_printing.id
+    end
+
+    test "resolves exact collector number when set code and collector number are present" do
+      deck = deck_fixture()
+
+      _first_printing =
+        card_fixture(%{
+          name: "Lightning Bolt",
+          normalized_name: "lightning bolt",
+          set_code: "m11",
+          collector_number: "149"
+        })
+
+      selected_printing =
+        card_fixture(%{
+          name: "Lightning Bolt",
+          normalized_name: "lightning bolt",
+          set_code: "m11",
+          collector_number: "150"
+        })
+
+      assert {:ok, %{imported_count: 4}} =
+               DeckImporter.import_text(deck, "4 Lightning Bolt (M11) 150")
+
+      assert [%{card_id: card_id, quantity: 4, section: "mainboard"}] = Decks.list_entries(deck)
+      assert card_id == selected_printing.id
+    end
+
+    test "resolves the lowest collector number when set code is present without collector number" do
+      deck = deck_fixture()
+
+      _higher_printing =
+        card_fixture(%{
+          name: "Island",
+          normalized_name: "island",
+          set_code: "unf",
+          collector_number: "236"
+        })
+
+      lowest_printing =
+        card_fixture(%{
+          name: "Island",
+          normalized_name: "island",
+          set_code: "unf",
+          collector_number: "235"
+        })
+
+      assert {:ok, %{imported_count: 1}} = DeckImporter.import_text(deck, "Island (UNF)")
+
+      assert [%{card_id: card_id, quantity: 1, section: "mainboard"}] = Decks.list_entries(deck)
+      assert card_id == lowest_printing.id
     end
 
     test "resolves a preferred deterministic printing when set code is omitted" do
@@ -126,8 +193,12 @@ defmodule TopDeckTutor.Decks.DeckImporterTest do
                DeckImporter.import_text(deck, "Missing Card\nSol Ring (ABC)")
 
       assert errors == [
-               %{line_number: 1, message: "card not found"},
-               %{line_number: 2, message: "no printing found for set ABC"}
+               %{line_number: 1, card_text: "Missing Card", message: "card not found"},
+               %{
+                 line_number: 2,
+                 card_text: "Sol Ring",
+                 message: "no printing found for set ABC"
+               }
              ]
     end
 
@@ -151,7 +222,7 @@ defmodule TopDeckTutor.Decks.DeckImporterTest do
       deck = deck_fixture()
       sol_ring = card_fixture(%{name: "Sol Ring", normalized_name: "sol ring"})
 
-      assert {:error, [%{line_number: 2, message: "card not found"}]} =
+      assert {:error, [%{line_number: 2, card_text: "Missing Card", message: "card not found"}]} =
                DeckImporter.import_text(deck, "Sol Ring\nMissing Card")
 
       assert Decks.list_entries(deck) == []
