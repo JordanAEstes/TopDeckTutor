@@ -14,7 +14,9 @@ let Hooks = {
   CardPreview: {
     mounted() {
       this.onEnter = () => {
-        this.pushEvent("preview_card", { card_id: this.el.dataset.cardId })
+        if (this.el.dataset.cardId) {
+          this.pushEvent("preview_card", { card_id: this.el.dataset.cardId })
+        }
       }
 
       this.el.addEventListener("mouseenter", this.onEnter)

@@ -207,6 +207,9 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   end
 
   @impl true
+  def handle_event("preview_card", _params, socket), do: {:noreply, socket}
+
+  @impl true
   def handle_event("remove_entry", %{"id" => id}, socket) do
     entry = TopDeckTutor.Decks.get_deck_entry!(socket.assigns.deck, id)
 

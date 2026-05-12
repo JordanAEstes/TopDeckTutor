@@ -354,6 +354,18 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
     assert has_element?(view, "#deck-list-column-1 #deck-entry-#{entries_by_name["Island"].id}")
   end
 
+  test "card preview hook ignores missing card ids", %{conn: conn, user: user} do
+    {deck, entries_by_name} = deck_with_type_entries(user)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}?view=list")
+
+    view
+    |> element("#deck-entry-#{entries_by_name["Island"].id}")
+    |> render_hook("preview_card", %{})
+
+    assert has_element?(view, "#deck-list-columns")
+  end
+
   test "list view flows sections through shared columns and wraps after fifty card entries", %{
     conn: conn,
     user: user
