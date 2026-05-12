@@ -6,6 +6,18 @@ defmodule TopDeckTutor.Decks do
   alias TopDeckTutor.Cards.Card
   alias TopDeckTutor.Decks.{Deck, DeckEntry}
 
+  @type_group_order [
+    "Creature",
+    "Planeswalker",
+    "Instant",
+    "Sorcery",
+    "Artifact",
+    "Enchantment",
+    "Battle",
+    "Land",
+    "Other"
+  ]
+
   def list_decks_for_user(%User{id: user_id}) do
     Deck
     |> where([d], d.user_id == ^user_id)
@@ -191,6 +203,29 @@ defmodule TopDeckTutor.Decks do
     deck
     |> list_entries()
     |> Enum.group_by(& &1.section)
+  end
+
+  def card_type_group(%{type_line: type_line}) when is_binary(type_line) do
+    Enum.find(@type_group_order, "Other", fn
+      "Other" -> false
+      type -> Regex.match?(~r/(^|[^[:alnum:]])#{type}([^[:alnum:]]|$)/, type_line)
+    end)
+  end
+
+  def card_type_group(_card), do: "Other"
+
+  def group_entries_by_type(entries) when is_list(entries) do
+    entries
+    |> Enum.group_by(&card_type_group(&1.card))
+    |> then(fn entries_by_type ->
+      @type_group_order
+      |> Enum.flat_map(fn type ->
+        case Map.get(entries_by_type, type, []) do
+          [] -> []
+          entries -> [{type, entries}]
+        end
+      end)
+    end)
   end
 
   defp normalize_quantity(quantity) when is_integer(quantity), do: quantity

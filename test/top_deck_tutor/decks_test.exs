@@ -247,6 +247,72 @@ defmodule TopDeckTutor.DecksTest do
     end
   end
 
+  describe "card_type_group/1" do
+    test "classifies supported card types" do
+      assert Decks.card_type_group(%{type_line: "Creature — Elf Druid"}) == "Creature"
+
+      assert Decks.card_type_group(%{type_line: "Legendary Planeswalker — Teferi"}) ==
+               "Planeswalker"
+
+      assert Decks.card_type_group(%{type_line: "Instant"}) == "Instant"
+      assert Decks.card_type_group(%{type_line: "Sorcery"}) == "Sorcery"
+      assert Decks.card_type_group(%{type_line: "Artifact"}) == "Artifact"
+      assert Decks.card_type_group(%{type_line: "Enchantment"}) == "Enchantment"
+      assert Decks.card_type_group(%{type_line: "Battle — Siege"}) == "Battle"
+      assert Decks.card_type_group(%{type_line: "Basic Land — Island"}) == "Land"
+    end
+
+    test "classifies multi-type cards by precedence" do
+      assert Decks.card_type_group(%{type_line: "Artifact Creature — Golem"}) == "Creature"
+      assert Decks.card_type_group(%{type_line: "Enchantment Creature — Spirit"}) == "Creature"
+      assert Decks.card_type_group(%{type_line: "Artifact Land"}) == "Artifact"
+    end
+
+    test "classifies unsupported card types as other" do
+      assert Decks.card_type_group(%{type_line: "Conspiracy"}) == "Other"
+      assert Decks.card_type_group(%{type_line: nil}) == "Other"
+    end
+  end
+
+  describe "group_entries_by_type/1" do
+    test "groups entries in type order and omits empty groups" do
+      deck = deck_fixture()
+      land = card_fixture(%{name: "Island", normalized_name: "island", type_line: "Basic Land"})
+      instant = card_fixture(%{name: "Opt", normalized_name: "opt", type_line: "Instant"})
+
+      creature =
+        card_fixture(%{
+          name: "Solemn Simulacrum",
+          normalized_name: "solemn simulacrum",
+          type_line: "Artifact Creature — Golem"
+        })
+
+      other =
+        card_fixture(%{
+          name: "Backup Plan",
+          normalized_name: "backup plan",
+          type_line: "Conspiracy"
+        })
+
+      {:ok, _} = Decks.add_card(deck, land)
+      {:ok, _} = Decks.add_card(deck, instant)
+      {:ok, _} = Decks.add_card(deck, creature)
+      {:ok, _} = Decks.add_card(deck, other)
+
+      grouped = deck |> Decks.list_entries() |> Decks.group_entries_by_type()
+
+      assert Enum.map(grouped, fn {group, _entries} -> group end) == [
+               "Creature",
+               "Instant",
+               "Land",
+               "Other"
+             ]
+
+      assert {"Creature", [creature_entry]} = Enum.at(grouped, 0)
+      assert creature_entry.card_id == creature.id
+    end
+  end
+
   describe "search_query_in_deck/2" do
     test "supports quoted name filters within a deck" do
       deck = deck_fixture()

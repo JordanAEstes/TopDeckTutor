@@ -16,6 +16,7 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   def handle_params(%{"id" => id} = params, _url, socket) do
     deck = Decks.get_user_deck_with_entries!(socket.assigns.current_scope.user, id)
     view_mode = normalize_view_mode(Map.get(params, "view", "details"))
+    sort_mode = normalize_sort_mode(Map.get(params, "sort"))
     deck_query = params |> Map.get("q", "") |> String.trim()
 
     preview_card =
@@ -30,6 +31,8 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
      |> assign(:view_mode, view_mode)
+     |> assign(:sort_mode, sort_mode)
+     |> assign(:sort_by_type?, sort_mode == "type")
      |> assign(:preview_card, preview_card)
      |> assign(:search_term, "")
      |> assign(:search_results, [])
@@ -134,7 +137,28 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
     mode = normalize_view_mode(mode)
 
     {:noreply,
-     push_patch(socket, to: show_path(socket.assigns.deck, mode, socket.assigns.deck_query))}
+     push_patch(
+       socket,
+       to:
+         show_path(socket.assigns.deck, mode, socket.assigns.deck_query, socket.assigns.sort_mode)
+     )}
+  end
+
+  @impl true
+  def handle_event("toggle_type_sort", _params, socket) do
+    sort_mode = if socket.assigns.sort_by_type?, do: nil, else: "type"
+
+    {:noreply,
+     push_patch(
+       socket,
+       to:
+         show_path(
+           socket.assigns.deck,
+           socket.assigns.view_mode,
+           socket.assigns.deck_query,
+           sort_mode
+         )
+     )}
   end
 
   @impl true
@@ -180,11 +204,12 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
 
   defp add_card_search_opts(_deck), do: []
 
-  defp show_path(deck, view_mode, deck_query) do
+  defp show_path(deck, view_mode, deck_query, sort_mode) do
     params =
       []
       |> maybe_put_param(:view, view_mode, "details")
       |> maybe_put_param(:q, deck_query, "")
+      |> maybe_put_param(:sort, sort_mode, nil)
 
     ~p"/decks/#{deck}?#{params}"
   end
@@ -274,4 +299,65 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   defp normalize_view_mode("images"), do: "images"
   defp normalize_view_mode("list"), do: "list"
   defp normalize_view_mode(_), do: "details"
+
+  defp normalize_sort_mode("type"), do: "type"
+  defp normalize_sort_mode(_), do: nil
+
+  defp grouped_entries(entries), do: Decks.group_entries_by_type(entries)
+
+  defp type_group_id(section, group), do: "deck-type-group-#{section}-#{group}"
+
+  defp list_view_columns(entries_by_section, sort_by_type?) do
+    entries_by_section
+    |> Enum.sort_by(fn {section, _entries} -> section end)
+    |> Enum.flat_map(fn {section, entries} ->
+      section_rows = [
+        {:section, section, Enum.reduce(entries, 0, fn entry, acc -> entry.quantity + acc end)}
+      ]
+
+      entry_rows =
+        if sort_by_type? do
+          entries
+          |> grouped_entries()
+          |> Enum.flat_map(fn {group, group_entries} ->
+            [
+              {:type_group, section, group, entry_count(group_entries)}
+              | Enum.map(group_entries, &{:entry, &1})
+            ]
+          end)
+        else
+          Enum.map(entries, &{:entry, &1})
+        end
+
+      section_rows ++ entry_rows
+    end)
+    |> split_list_columns()
+  end
+
+  defp split_list_columns(rows) do
+    {columns, current_column, _entry_count} =
+      Enum.reduce(rows, {[], [], 0}, fn
+        {:entry, _entry} = row, {columns, current_column, 50} ->
+          {[Enum.reverse(current_column) | columns], [row], 1}
+
+        {:entry, _entry} = row, {columns, current_column, entry_count} ->
+          {columns, [row | current_column], entry_count + 1}
+
+        row, {columns, current_column, 50} ->
+          {[Enum.reverse(current_column) | columns], [row], 0}
+
+        row, {columns, current_column, entry_count} ->
+          {columns, [row | current_column], entry_count}
+      end)
+
+    [Enum.reverse(current_column) | columns]
+    |> Enum.reject(&(&1 == []))
+    |> Enum.reverse()
+  end
+
+  defp entry_count(entries),
+    do: Enum.reduce(entries, 0, fn entry, acc -> entry.quantity + acc end)
+
+  defp card_count_label(1), do: "1 card"
+  defp card_count_label(count), do: "#{count} cards"
 end
