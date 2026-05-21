@@ -57,6 +57,10 @@ defmodule TopDeckTutor.Decks do
     Deck.changeset(deck, attrs)
   end
 
+  def validate_deck(%Deck{} = deck) do
+    TopDeckTutor.DeckValidation.validate_deck(deck)
+  end
+
   def list_entries(%Deck{id: deck_id}) do
     DeckEntry
     |> where([de], de.deck_id == ^deck_id)

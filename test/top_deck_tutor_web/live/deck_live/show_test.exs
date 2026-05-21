@@ -53,6 +53,39 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
     assert render(view) =~ "card-search-results"
   end
 
+  test "renders a valid format validation panel", %{conn: conn, user: user} do
+    deck = deck_fixture(user, %{format: "modern"})
+    card = card_fixture(%{name: "Lightning Bolt", legalities: %{"modern" => "legal"}})
+
+    {:ok, _entry} = Decks.add_card(deck, card)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    assert has_element?(
+             view,
+             "#deck-validation-status[title='Valid deck for Modern'] .hero-check-circle"
+           )
+
+    refute has_element?(view, "#deck-format-validation")
+  end
+
+  test "renders invalid format validation issues", %{conn: conn, user: user} do
+    deck = deck_fixture(user, %{format: "modern"})
+    card = card_fixture(%{name: "Black Lotus", legalities: %{"modern" => "banned"}})
+
+    {:ok, _entry} = Decks.add_card(deck, card)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    assert has_element?(
+             view,
+             "#deck-validation-status[title='Black Lotus is not legal in modern'] .hero-x-circle"
+           )
+
+    assert has_element?(view, "#deck-validation-summary", "1 validation issue")
+    assert has_element?(view, "#deck-validation-issues", "Black Lotus is not legal in modern")
+  end
+
   test "clicking a card in the dropdown adds one copy to the mainboard", %{
     conn: conn,
     user: user
@@ -74,6 +107,51 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
 
     assert [%{card_id: card_id, section: "mainboard", quantity: 1}] = Decks.list_entries(deck)
     assert card_id == card.id
+  end
+
+  test "validation refreshes after adding a card", %{conn: conn, user: user} do
+    deck = deck_fixture(user, %{format: "modern"})
+
+    card =
+      card_fixture(%{
+        name: "Black Lotus",
+        normalized_name: "black lotus",
+        legalities: %{"modern" => "banned"}
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    assert has_element?(view, "#deck-validation-status[title='Valid deck for Modern']")
+    refute has_element?(view, "#deck-format-validation")
+
+    view
+    |> element("#card-search-input")
+    |> render_keyup(%{"value" => "Black"})
+
+    view
+    |> element("#card-search-option-#{card.id}")
+    |> render_click()
+
+    assert has_element?(view, "#deck-validation-summary", "1 validation issue")
+    assert has_element?(view, "#deck-validation-issues", "Black Lotus is not legal in modern")
+  end
+
+  test "validation refreshes after removing a card", %{conn: conn, user: user} do
+    deck = deck_fixture(user, %{format: "modern"})
+    card = card_fixture(%{name: "Black Lotus", legalities: %{"modern" => "banned"}})
+
+    {:ok, entry} = Decks.add_card(deck, card)
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    assert has_element?(view, "#deck-validation-summary", "1 validation issue")
+
+    view
+    |> element("#deck-entry-#{entry.id} button", "Remove")
+    |> render_click()
+
+    assert has_element?(view, "#deck-validation-status[title='Valid deck for Modern']")
+    refute has_element?(view, "#deck-validation-issues")
   end
 
   test "shows an import decklist button and opens the import modal", %{
@@ -432,6 +510,36 @@ defmodule TopDeckTutorWeb.DeckLive.ShowTest do
     assert has_element?(view, "#deck-entry-#{sol_ring_entry.id}", "Sol Ring")
     assert has_element?(view, "#deck-entry-#{brainstorm_entry.id}", "Brainstorm")
     refute has_element?(view, "#deck-import-modal")
+  end
+
+  test "validation refreshes after importing cards", %{
+    conn: conn,
+    user: user
+  } do
+    deck = deck_fixture(user, %{format: "modern"})
+
+    _black_lotus =
+      card_fixture(%{
+        name: "Black Lotus",
+        normalized_name: "black lotus",
+        legalities: %{"modern" => "banned"}
+      })
+
+    {:ok, view, _html} = live(conn, ~p"/decks/#{deck}")
+
+    assert has_element?(view, "#deck-validation-status[title='Valid deck for Modern']")
+    refute has_element?(view, "#deck-format-validation")
+
+    view
+    |> element("#open-deck-importer")
+    |> render_click()
+
+    view
+    |> element("#deck-import-form")
+    |> render_submit(%{"import" => %{"decklist" => "Black Lotus"}})
+
+    assert has_element?(view, "#deck-validation-summary", "1 validation issue")
+    assert has_element?(view, "#deck-validation-issues", "Black Lotus is not legal in modern")
   end
 
   test "import errors are displayed and existing cards remain", %{
