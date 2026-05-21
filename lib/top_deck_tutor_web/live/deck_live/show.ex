@@ -5,6 +5,7 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   alias TopDeckTutor.Decks
   alias TopDeckTutor.Decks.DeckExporter
   alias TopDeckTutor.Decks.DeckImporter
+  alias TopDeckTutor.Formats
   alias TopDeckTutor.Search
   alias TopDeckTutorWeb.DeckLive.FormComponent
 
@@ -259,6 +260,7 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
   defp assign_deck_state(socket, deck) do
     socket
     |> assign(:deck, deck)
+    |> assign(:deck_validation, Decks.validate_deck(deck))
     |> assign(:entries_by_section, Decks.entries_by_section(deck))
     |> assign_export_state()
     |> apply_deck_search(socket.assigns[:deck_query] || "")
@@ -345,6 +347,30 @@ defmodule TopDeckTutorWeb.DeckLive.Show do
     |> Enum.sort_by(fn {section, _entries} -> section end)
     |> Enum.find_value(fn {_section, entries} -> List.first(entries) end)
   end
+
+  defp format_display_name(deck) do
+    deck.format
+    |> Formats.get()
+    |> case do
+      nil -> Phoenix.Naming.humanize(deck.format || "unknown format")
+      format -> format.display_name()
+    end
+  end
+
+  defp issue_count_label(1), do: "1 validation issue"
+  defp issue_count_label(count), do: "#{count} validation issues"
+
+  defp validation_status_title(deck, %{valid?: true}),
+    do: "Valid deck for #{format_display_name(deck)}"
+
+  defp validation_status_title(_deck, %{errors: errors}) do
+    errors
+    |> Enum.map(& &1.message)
+    |> Enum.join("\n")
+  end
+
+  defp section_label("command"), do: "Command Zone"
+  defp section_label(section), do: section
 
   defp maybe_put_param(params, _key, value, default) when value in [nil, default], do: params
   defp maybe_put_param(params, key, value, _default), do: Keyword.put(params, key, value)

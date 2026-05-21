@@ -21,6 +21,23 @@
                 {@deck.name}
               </h1>
 
+              <span
+                id="deck-validation-status"
+                title={validation_status_title(@deck, @deck_validation)}
+                class={[
+                  "mb-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                  @deck_validation.valid? && "text-emerald-700",
+                  !@deck_validation.valid? && "text-rose-700"
+                ]}
+              >
+                <.icon
+                  name={
+                    if(@deck_validation.valid?, do: "hero-check-circle", else: "hero-x-circle")
+                  }
+                  class="h-6 w-6"
+                />
+              </span>
+
               <.link
                 patch={~p"/decks/#{@deck}/show/edit"}
                 class="mb-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-900/8 hover:text-slate-900"
@@ -45,6 +62,67 @@
             {@deck.description}
           </p>
         <% end %>
+      </div>
+    </section>
+
+    <section
+      :if={!@deck_validation.valid?}
+      id="deck-format-validation"
+      class={[
+        "app-panel space-y-4 p-5",
+        @deck_validation.valid? && "border-emerald-900/15 bg-emerald-50/70",
+        !@deck_validation.valid? && "border-rose-900/15 bg-rose-50/70"
+      ]}
+    >
+      <div class="flex items-start gap-3">
+        <div class={[
+          "mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+          @deck_validation.valid? && "bg-emerald-100 text-emerald-700",
+          !@deck_validation.valid? && "bg-rose-100 text-rose-700"
+        ]}>
+          <.icon
+            name={
+              if(@deck_validation.valid?,
+                do: "hero-check-circle",
+                else: "hero-exclamation-triangle"
+              )
+            }
+            class="h-5 w-5"
+          />
+        </div>
+
+        <div class="min-w-0 space-y-2">
+          <div class="space-y-1">
+            <h2 class="text-xl font-medium">Format Validation</h2>
+            <p
+              id="deck-validation-summary"
+              class={[
+                "text-sm font-medium",
+                @deck_validation.valid? && "text-emerald-800",
+                !@deck_validation.valid? && "text-rose-800"
+              ]}
+            >
+              <%= if @deck_validation.valid? do %>
+                Deck is valid for {format_display_name(@deck)}
+              <% else %>
+                {issue_count_label(length(@deck_validation.errors))}
+              <% end %>
+            </p>
+          </div>
+
+          <ul
+            :if={!@deck_validation.valid?}
+            id="deck-validation-issues"
+            class="space-y-1 text-sm text-rose-900"
+          >
+            <li
+              :for={{error, index} <- Enum.with_index(@deck_validation.errors)}
+              id={"deck-validation-issue-#{index}"}
+            >
+              {error.message}
+            </li>
+          </ul>
+        </div>
       </div>
     </section>
 
@@ -338,17 +416,17 @@
                   <% {:section, section, card_count} -> %>
                     <div
                       id={"deck-section-heading-#{section}"}
-                      class="flex items-center justify-between border-b px-5 py-4"
+                      class="flex items-center justify-between border-b border-[#5b3b1d] bg-[#6f4a24] px-5 py-4 text-[#fff7e6]"
                     >
                       <div class="space-y-1">
-                        <h3 class="text-xl font-medium capitalize">{section}</h3>
-                        <p class="text-sm app-muted">{card_count} cards</p>
+                        <h3 class="text-xl font-medium capitalize">{section_label(section)}</h3>
+                        <p class="text-sm text-[#ead8ad]">{card_count} cards</p>
                       </div>
                     </div>
                   <% {:type_group, section, group, card_count} -> %>
                     <h4
                       id={type_group_id(section, group)}
-                      class="flex items-center justify-between gap-3 border-b bg-black/5 px-5 py-3 text-sm font-semibold uppercase tracking-[0.14em] app-muted"
+                      class="flex items-center justify-between gap-3 border-b border-[#b89545] bg-[#c9a95b] px-5 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-[#3f2d11]"
                     >
                       <span>{group}</span>
                       <span class="shrink-0 text-xs normal-case tracking-normal">
@@ -394,10 +472,10 @@
         <div class="space-y-5">
           <%= for {section, entries} <- @visible_entries_by_section do %>
             <section id={"deck-section-#{section}"} class="app-panel overflow-hidden">
-              <div class="flex items-center justify-between border-b px-5 py-4">
+              <div class="flex items-center justify-between border-b border-[#5b3b1d] bg-[#6f4a24] px-5 py-4 text-[#fff7e6]">
                 <div class="space-y-1">
-                  <h3 class="text-xl font-medium capitalize">{section}</h3>
-                  <p class="text-sm app-muted">
+                  <h3 class="text-xl font-medium capitalize">{section_label(section)}</h3>
+                  <p class="text-sm text-[#ead8ad]">
                     {Enum.reduce(entries, 0, fn entry, acc -> entry.quantity + acc end)} cards
                   </p>
                 </div>
@@ -410,7 +488,7 @@
                       :for={{group, group_entries} <- grouped_entries(entries)}
                       id={type_group_id(section, group)}
                     >
-                      <h4 class="flex items-center justify-between gap-3 bg-black/5 px-5 py-3 text-sm font-semibold uppercase tracking-[0.14em] app-muted">
+                      <h4 class="flex items-center justify-between gap-3 bg-[#c9a95b] px-5 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-[#3f2d11]">
                         <span>{group}</span>
                         <span class="shrink-0 text-xs normal-case tracking-normal">
                           {card_count_label(entry_count(group_entries))}
@@ -519,7 +597,7 @@
                       :for={{group, group_entries} <- grouped_entries(entries)}
                       id={type_group_id(section, group)}
                     >
-                      <h4 class="flex items-center justify-between gap-3 bg-black/5 px-5 py-3 text-sm font-semibold uppercase tracking-[0.14em] app-muted">
+                      <h4 class="flex items-center justify-between gap-3 bg-[#c9a95b] px-5 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-[#3f2d11]">
                         <span>{group}</span>
                         <span class="shrink-0 text-xs normal-case tracking-normal">
                           {card_count_label(entry_count(group_entries))}

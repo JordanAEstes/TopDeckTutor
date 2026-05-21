@@ -3,64 +3,74 @@ defmodule TopDeckTutor.DeckValidationTest do
 
   alias TopDeckTutor.DeckValidation
   alias TopDeckTutor.Decks.Deck
+  alias TopDeckTutor.Decks.ValidationResult
 
   import TopDeckTutor.CardsFixtures
   import TopDeckTutor.DecksFixtures
 
   describe "validate_deck/1" do
-    test "validates a persisted deck through its format key" do
-      deck = deck_fixture(nil, %{format: "Commander"})
+    test "returns a structured valid result for a persisted deck through its format key" do
+      deck = deck_fixture(nil, %{format: "modern"})
 
-      commander =
-        card_fixture(%{
-          name: "Alela, Artful Provocateur",
-          color_identity: ["W", "U", "B"],
-          legalities: %{"commander" => "legal"}
-        })
+      card = card_fixture(%{name: "Lightning Bolt", legalities: %{"modern" => "legal"}})
 
-      card =
-        card_fixture(%{
-          name: "Sol Ring",
-          color_identity: [],
-          legalities: %{"commander" => "legal"}
-        })
-
-      assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, commander, %{section: "command"})
       assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, card)
 
-      assert DeckValidation.validate_deck(deck) == :ok
+      assert %ValidationResult{valid?: true, errors: [], warnings: []} =
+               DeckValidation.validate_deck(deck)
     end
 
     test "returns a structured error for an unknown format" do
-      assert DeckValidation.validate_deck(%Deck{format: "frontier"}) ==
-               {:error, ["Unsupported format: frontier"]}
+      assert %ValidationResult{
+               valid?: false,
+               errors: [
+                 %{code: :unsupported_format, message: "Unsupported format: frontier"}
+               ],
+               warnings: []
+             } = DeckValidation.validate_deck(%Deck{format: "frontier"})
     end
 
     test "returns legality errors from the selected format" do
-      deck = deck_fixture(nil, %{format: "commander"})
-
-      commander =
-        card_fixture(%{
-          name: "Alela, Artful Provocateur",
-          color_identity: ["W", "U", "B"],
-          legalities: %{"commander" => "legal"}
-        })
+      deck = deck_fixture(nil, %{format: "modern"})
 
       card =
         card_fixture(%{
           name: "Black Lotus",
           color_identity: [],
-          legalities: %{"commander" => "banned"}
+          legalities: %{"modern" => "banned"}
         })
 
-      assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, commander, %{section: "command"})
       assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, card)
 
-      assert DeckValidation.validate_deck(deck) ==
-               {:error, ["Black Lotus is not legal in commander"]}
+      assert %ValidationResult{
+               valid?: false,
+               errors: [
+                 %{code: :illegal_card, message: "Black Lotus is not legal in modern"}
+               ]
+             } = DeckValidation.validate_deck(deck)
     end
 
     test "returns copy limit errors from the selected format" do
+      deck = deck_fixture(nil, %{format: "modern"})
+
+      card =
+        card_fixture(%{
+          name: "Sol Ring",
+          color_identity: [],
+          legalities: %{"modern" => "legal"}
+        })
+
+      assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, card, %{quantity: 5})
+
+      assert %ValidationResult{
+               valid?: false,
+               errors: [
+                 %{code: :too_many_copies, message: "Sol Ring exceeds modern copy limit of 4"}
+               ]
+             } = DeckValidation.validate_deck(deck)
+    end
+
+    test "returns deck-size errors from commander rules" do
       deck = deck_fixture(nil, %{format: "commander"})
 
       commander =
@@ -70,18 +80,14 @@ defmodule TopDeckTutor.DeckValidationTest do
           legalities: %{"commander" => "legal"}
         })
 
-      card =
-        card_fixture(%{
-          name: "Sol Ring",
-          color_identity: [],
-          legalities: %{"commander" => "legal"}
-        })
-
       assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, commander, %{section: "command"})
-      assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, card, %{quantity: 2})
 
-      assert DeckValidation.validate_deck(deck) ==
-               {:error, ["Sol Ring exceeds commander copy limit of 1"]}
+      assert %ValidationResult{
+               valid?: false,
+               errors: [
+                 %{code: :deck_size, message: "Commander decks must contain exactly 100 cards"}
+               ]
+             } = DeckValidation.validate_deck(deck)
     end
 
     test "returns commander color identity errors from the selected format" do
@@ -104,8 +110,16 @@ defmodule TopDeckTutor.DeckValidationTest do
       assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, commander, %{section: "command"})
       assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, card)
 
-      assert DeckValidation.validate_deck(deck) ==
-               {:error, ["Lightning Bolt has color identity outside Alela, Artful Provocateur"]}
+      assert %ValidationResult{
+               valid?: false,
+               errors: [
+                 %{
+                   code: :format_rule,
+                   message: "Lightning Bolt has color identity outside Alela, Artful Provocateur"
+                 },
+                 %{code: :deck_size, message: "Commander decks must contain exactly 100 cards"}
+               ]
+             } = DeckValidation.validate_deck(deck)
     end
 
     test "returns section errors from the selected format" do
@@ -114,8 +128,24 @@ defmodule TopDeckTutor.DeckValidationTest do
 
       assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, card, %{section: "command"})
 
-      assert DeckValidation.validate_deck(deck) ==
-               {:error, ["Lightning Bolt is in command, which is not allowed in modern"]}
+      assert %ValidationResult{
+               valid?: false,
+               errors: [
+                 %{
+                   code: :invalid_section,
+                   message: "Lightning Bolt is in command, which is not allowed in modern"
+                 }
+               ]
+             } = DeckValidation.validate_deck(deck)
+    end
+
+    test "is exposed through the decks context" do
+      deck = deck_fixture(nil, %{format: "modern"})
+      card = card_fixture(%{name: "Lightning Bolt", legalities: %{"modern" => "legal"}})
+
+      assert {:ok, _entry} = TopDeckTutor.Decks.add_card(deck, card)
+
+      assert %ValidationResult{valid?: true} = TopDeckTutor.Decks.validate_deck(deck)
     end
   end
 end

@@ -45,6 +45,10 @@ defmodule TopDeckTutorWeb.Layouts do
             </.link>
 
             <nav class="hidden items-center gap-4 md:flex">
+              <.link navigate={~p"/search/advanced"} class="app-link-nav">
+                Advanced Search
+              </.link>
+
               <.link navigate={~p"/syntax"} class="app-link-nav">
                 Syntax Guide
               </.link>

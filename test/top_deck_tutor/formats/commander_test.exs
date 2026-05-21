@@ -44,16 +44,30 @@ defmodule TopDeckTutor.Formats.CommanderTest do
       deck = %Deck{deck_entries: []}
 
       assert Commander.validate_deck(deck) ==
-               {:error, ["Commander decks must include a commander"]}
+               {:error,
+                [
+                  "Commander decks must include a commander",
+                  %{code: :deck_size, message: "Commander decks must contain exactly 100 cards"}
+                ]}
+    end
+
+    test "requires exactly one hundred cards" do
+      deck =
+        deck_with_entries([
+          entry("command", "Alela, Artful Provocateur", ["W", "U", "B"]),
+          entry("mainboard", "Arcane Signet", [])
+        ])
+
+      assert Commander.validate_deck(deck) ==
+               {:error,
+                [%{code: :deck_size, message: "Commander decks must contain exactly 100 cards"}]}
     end
 
     test "allows cards within the commander's color identity" do
       deck =
         deck_with_entries([
           entry("command", "Alela, Artful Provocateur", ["W", "U", "B"]),
-          entry("mainboard", "Swords to Plowshares", ["W"]),
-          entry("mainboard", "Counterspell", ["U"]),
-          entry("mainboard", "Arcane Signet", [])
+          entry("mainboard", "Island", [], 99, "Basic Land - Island")
         ])
 
       assert Commander.validate_deck(deck) == :ok
@@ -67,17 +81,21 @@ defmodule TopDeckTutor.Formats.CommanderTest do
         ])
 
       assert Commander.validate_deck(deck) ==
-               {:error, ["Lightning Bolt has color identity outside Alela, Artful Provocateur"]}
+               {:error,
+                [
+                  "Lightning Bolt has color identity outside Alela, Artful Provocateur",
+                  %{code: :deck_size, message: "Commander decks must contain exactly 100 cards"}
+                ]}
     end
   end
 
   defp deck_with_entries(entries), do: %Deck{deck_entries: entries}
 
-  defp entry(section, name, color_identity) do
+  defp entry(section, name, color_identity, quantity \\ 1, type_line \\ nil) do
     %DeckEntry{
       section: section,
-      quantity: 1,
-      card: %Card{name: name, color_identity: color_identity}
+      quantity: quantity,
+      card: %Card{name: name, color_identity: color_identity, type_line: type_line}
     }
   end
 end

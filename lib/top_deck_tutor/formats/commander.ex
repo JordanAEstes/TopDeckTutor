@@ -13,15 +13,12 @@ defmodule TopDeckTutor.Formats.Commander do
   def validate_deck(%{deck_entries: %NotLoaded{}}), do: :ok
 
   def validate_deck(%{deck_entries: entries}) when is_list(entries) do
-    case commander_entry(entries) do
-      nil ->
-        {:error, ["Commander decks must include a commander"]}
+    errors =
+      entries
+      |> commander_errors()
+      |> Kernel.++(deck_size_errors(entries))
 
-      commander_entry ->
-        errors = color_identity_errors(entries, commander_entry.card)
-
-        if errors == [], do: :ok, else: {:error, errors}
-    end
+    if errors == [], do: :ok, else: {:error, errors}
   end
 
   def validate_deck(_deck), do: :ok
@@ -40,6 +37,23 @@ defmodule TopDeckTutor.Formats.Commander do
   defp basic_land?(card), do: String.contains?(card.type_line || "", "Basic Land")
 
   defp commander_entry(entries), do: Enum.find(entries, &(&1.section == "command"))
+
+  defp commander_errors(entries) do
+    case commander_entry(entries) do
+      nil -> ["Commander decks must include a commander"]
+      commander_entry -> color_identity_errors(entries, commander_entry.card)
+    end
+  end
+
+  defp deck_size_errors(entries) do
+    card_count = Enum.reduce(entries, 0, fn entry, acc -> entry.quantity + acc end)
+
+    if card_count == 100 do
+      []
+    else
+      [%{code: :deck_size, message: "Commander decks must contain exactly 100 cards"}]
+    end
+  end
 
   defp color_identity_errors(entries, commander) do
     Enum.flat_map(entries, fn entry ->

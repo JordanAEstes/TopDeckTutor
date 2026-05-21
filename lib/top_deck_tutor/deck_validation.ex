@@ -6,6 +6,7 @@ defmodule TopDeckTutor.DeckValidation do
   alias Ecto.Association.NotLoaded
   alias TopDeckTutor.Decks
   alias TopDeckTutor.Decks.{Deck, DeckEntry}
+  alias TopDeckTutor.Decks.ValidationResult
   alias TopDeckTutor.Formats
 
   def validate_deck(%Deck{} = deck) do
@@ -13,7 +14,7 @@ defmodule TopDeckTutor.DeckValidation do
 
     case Formats.get(format_key) do
       nil ->
-        {:error, ["Unsupported format: #{deck.format}"]}
+        invalid_result([error(:unsupported_format, "Unsupported format: #{deck.format}")])
 
       format ->
         loaded_entries = entries(deck)
@@ -24,7 +25,7 @@ defmodule TopDeckTutor.DeckValidation do
           |> Enum.flat_map(&entry_errors(&1, format, format_key))
           |> format_result(format.validate_deck(deck))
 
-        if errors == [], do: :ok, else: {:error, errors}
+        result(errors)
     end
   end
 
@@ -48,7 +49,15 @@ defmodule TopDeckTutor.DeckValidation do
     if entry.section in format.allowed_sections() do
       errors
     else
-      ["#{card.name} is in #{entry.section}, which is not allowed in #{format_key}" | errors]
+      [
+        error(
+          :invalid_section,
+          "#{card.name} is in #{entry.section}, which is not allowed in #{format_key}",
+          card_id: card.id,
+          section: entry.section
+        )
+        | errors
+      ]
     end
   end
 
@@ -56,7 +65,10 @@ defmodule TopDeckTutor.DeckValidation do
     if format.legal_card?(card, format_key) do
       errors
     else
-      ["#{card.name} is not legal in #{format_key}" | errors]
+      [
+        error(:illegal_card, "#{card.name} is not legal in #{format_key}", card_id: card.id)
+        | errors
+      ]
     end
   end
 
@@ -69,10 +81,34 @@ defmodule TopDeckTutor.DeckValidation do
         errors
 
       max_copies ->
-        ["#{card.name} exceeds #{format_key} copy limit of #{max_copies}" | errors]
+        [
+          error(
+            :too_many_copies,
+            "#{card.name} exceeds #{format_key} copy limit of #{max_copies}",
+            card_id: card.id
+          )
+          | errors
+        ]
     end
   end
 
   defp format_result(errors, :ok), do: errors
-  defp format_result(errors, {:error, format_errors}), do: errors ++ format_errors
+
+  defp format_result(errors, {:error, format_errors}) do
+    errors ++ Enum.map(format_errors, &normalize_format_error/1)
+  end
+
+  defp normalize_format_error(%{code: _code, message: _message} = error), do: error
+  defp normalize_format_error(message) when is_binary(message), do: error(:format_rule, message)
+
+  defp result([]), do: %ValidationResult{valid?: true, errors: [], warnings: []}
+  defp result(errors), do: invalid_result(errors)
+
+  defp invalid_result(errors), do: %ValidationResult{valid?: false, errors: errors, warnings: []}
+
+  defp error(code, message, attrs \\ []) do
+    attrs
+    |> Map.new()
+    |> Map.merge(%{code: code, message: message})
+  end
 end
