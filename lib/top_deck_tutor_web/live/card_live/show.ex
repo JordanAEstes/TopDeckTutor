@@ -11,10 +11,12 @@ defmodule TopDeckTutorWeb.CardLive.Show do
   @impl true
   def handle_params(%{"id" => id}, _url, socket) do
     card = Cards.get_card!(id)
+    printings = Cards.list_printings(card)
 
     {:noreply,
      socket
      |> assign(:card, card)
+     |> assign(:printings, printings)
      |> assign(:page_title, card.name)}
   end
 

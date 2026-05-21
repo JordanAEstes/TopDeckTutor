@@ -38,6 +38,10 @@ defmodule TopDeckTutor.Search.Compiler do
     dynamic([c, ...], c.set_code == ^value)
   end
 
+  defp node_dynamic({:field_eq, :oracle_id, value}) do
+    dynamic([c, ...], c.oracle_id == ^value)
+  end
+
   defp node_dynamic({:game, value}) do
     dynamic(
       [c, ...],

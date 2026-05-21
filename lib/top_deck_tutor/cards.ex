@@ -15,6 +15,18 @@ defmodule TopDeckTutor.Cards do
     Repo.get_by(Card, oracle_id: oracle_id)
   end
 
+  def list_printings(%Card{oracle_id: oracle_id}) do
+    Card
+    |> where([c], c.oracle_id == ^oracle_id)
+    |> order_by([c],
+      desc_nulls_last: c.released_at,
+      asc: c.set_code,
+      asc: c.collector_number,
+      asc: c.id
+    )
+    |> Repo.all()
+  end
+
   def get_card_by_name(name) do
     normalized_name = normalize_name(name)
 
@@ -99,7 +111,7 @@ defmodule TopDeckTutor.Cards do
     base_query =
       ast
       |> normalize_global_search_ast()
-      |> TopDeckTutor.Search.Compiler.compile(search_scope(scope))
+      |> then(&TopDeckTutor.Search.Compiler.compile(&1, search_scope(scope, &1)))
 
     total_count = Repo.aggregate(base_query, :count, :id)
     total_pages = max(div(total_count + page_size - 1, page_size), 1)
@@ -176,11 +188,32 @@ defmodule TopDeckTutor.Cards do
     |> String.trim()
   end
 
+  defp search_scope(:catalog, ast) do
+    if oracle_id_filter?(ast) do
+      from c in Card,
+        order_by: [
+          desc_nulls_last: c.released_at,
+          asc: c.set_code,
+          asc: c.collector_number,
+          asc: c.id
+        ]
+    else
+      search_scope()
+    end
+  end
+
+  defp search_scope(scope, _ast), do: search_scope(scope)
+
   defp search_scope(:catalog), do: search_scope()
+
   defp search_scope({:decks, []}), do: from(c in Card, where: false)
 
   defp search_scope({:decks, {user, deck_ids}}) do
     Decks.selected_decks_search_scope(user, deck_ids)
+  end
+
+  defp oracle_id_filter?(ast) do
+    Enum.any?(ast, &match?({:field_eq, :oracle_id, _}, &1))
   end
 
   defp normalize_global_search_ast(ast) do

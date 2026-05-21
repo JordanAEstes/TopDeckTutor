@@ -145,8 +145,9 @@
                 <span class="uppercase">({@card.set_code})</span>
               </div>
               <div class="mt-1 text-sm text-zinc-200">
-                ##{@card.collector_number} · {Phoenix.Naming.humanize(@card.rarity)} · {@card.lang
-                |> String.upcase()} · {finish_text(@card)}
+                ##{@card.collector_number || "?"} · {Phoenix.Naming.humanize(
+                  @card.rarity || "unknown"
+                )} · {String.upcase(@card.lang || "unknown")} · {finish_text(@card)}
               </div>
             </div>
 
@@ -183,7 +184,39 @@
             </div>
           </section>
 
-          <section class="app-panel overflow-hidden">
+          <section id="other-printings-card" class="app-panel overflow-hidden">
+            <div class="flex items-center justify-between gap-3 border-b bg-[var(--surface-dark)] px-4 py-3 text-[var(--text-inverse)]">
+              <div class="text-lg font-semibold">Other printings</div>
+              <.link
+                id="other-printings-see-all"
+                navigate={~p"/search?#{[q: "oracle:#{@card.oracle_id}", view: "images"]}"}
+                class="shrink-0 text-sm font-medium text-zinc-200 transition hover:text-[var(--text-inverse)] hover:underline"
+              >
+                See all
+              </.link>
+            </div>
+
+            <div class="max-h-[32rem] overflow-y-auto px-2 py-2">
+              <%= for printing <- @printings do %>
+                <.link
+                  patch={~p"/cards/#{printing}"}
+                  id={"printing-#{printing.id}"}
+                  aria-current={if(printing.id == @card.id, do: "page", else: nil)}
+                  class={[
+                    "block truncate rounded-md px-2.5 py-2 text-sm transition odd:bg-[var(--surface)] even:bg-[var(--surface-alt)] hover:bg-[var(--surface-dark)] hover:text-[var(--text-inverse)]",
+                    if(printing.id == @card.id,
+                      do: "font-medium ring-1 ring-inset ring-[var(--brand)]",
+                      else: "text-[var(--text)]"
+                    )
+                  ]}
+                >
+                  {printing.set_name || "Unknown set"} #{printing.collector_number || "?"}
+                </.link>
+              <% end %>
+            </div>
+          </section>
+
+          <section id="search-shortcuts-card" class="app-panel overflow-hidden">
             <div class="border-b bg-[var(--surface-dark)] px-4 py-3 text-lg font-semibold text-[var(--text-inverse)]">
               Search shortcuts
             </div>

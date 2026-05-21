@@ -221,7 +221,7 @@
         ]}>
           <%= for card <- @results do %>
             <%= if @view_mode == "images" do %>
-              <article class="space-y-2">
+              <article id={"search-result-#{card.id}"} class="space-y-2">
                 <.link
                   navigate={~p"/cards/#{card}"}
                   class="block overflow-hidden rounded-xl border bg-white shadow-sm transition hover:-translate-y-[1px] hover:shadow-md"

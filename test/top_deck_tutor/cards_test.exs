@@ -26,6 +26,70 @@ defmodule TopDeckTutor.CardsTest do
     end
   end
 
+  describe "list_printings/1" do
+    test "returns all printings for a card by oracle_id" do
+      oracle_id = Ecto.UUID.generate()
+      current = card_fixture(%{oracle_id: oracle_id, set_code: "lea"})
+      other_printing = card_fixture(%{oracle_id: oracle_id, set_code: "m11"})
+
+      results = Cards.list_printings(current)
+
+      assert Enum.map(results, & &1.id) |> Enum.sort() ==
+               [current.id, other_printing.id] |> Enum.sort()
+    end
+
+    test "excludes cards with a different oracle_id" do
+      oracle_id = Ecto.UUID.generate()
+      current = card_fixture(%{oracle_id: oracle_id})
+      _different_card = card_fixture()
+
+      assert Enum.map(Cards.list_printings(current), & &1.id) == [current.id]
+    end
+
+    test "sorts printings by newest release, set code, and collector number" do
+      oracle_id = Ecto.UUID.generate()
+
+      old_printing =
+        card_fixture(%{
+          oracle_id: oracle_id,
+          released_at: ~D[1993-08-05],
+          set_code: "lea",
+          collector_number: "161"
+        })
+
+      newest_later_collector =
+        card_fixture(%{
+          oracle_id: oracle_id,
+          released_at: ~D[2024-01-01],
+          set_code: "clu",
+          collector_number: "50"
+        })
+
+      newest_earlier_collector =
+        card_fixture(%{
+          oracle_id: oracle_id,
+          released_at: ~D[2024-01-01],
+          set_code: "clu",
+          collector_number: "10"
+        })
+
+      newer_different_set =
+        card_fixture(%{
+          oracle_id: oracle_id,
+          released_at: ~D[2023-01-01],
+          set_code: "m11",
+          collector_number: "146"
+        })
+
+      assert Enum.map(Cards.list_printings(old_printing), & &1.id) == [
+               newest_earlier_collector.id,
+               newest_later_collector.id,
+               newer_different_set.id,
+               old_printing.id
+             ]
+    end
+  end
+
   describe "get_card_by_name/1" do
     test "matches by normalized name" do
       card =
@@ -206,6 +270,35 @@ defmodule TopDeckTutor.CardsTest do
       assert {:ok, results} = Cards.search_query("Lightning Bolt")
       assert length(results) == 1
       assert Enum.map(results, & &1.name) == ["Lightning Bolt"]
+    end
+
+    test "search_query/1 returns every printing for oracle id filters" do
+      oracle_id = Ecto.UUID.generate()
+
+      first_printing =
+        card_fixture(%{
+          oracle_id: oracle_id,
+          name: "Lightning Bolt",
+          normalized_name: "lightning bolt",
+          set_code: "lea",
+          collector_number: "161",
+          released_at: ~D[1993-08-05]
+        })
+
+      second_printing =
+        card_fixture(%{
+          oracle_id: oracle_id,
+          name: "Lightning Bolt",
+          normalized_name: "lightning bolt",
+          set_code: "m11",
+          collector_number: "146",
+          released_at: ~D[2010-07-16]
+        })
+
+      _different_card = card_fixture(%{name: "Shock", normalized_name: "shock"})
+
+      assert {:ok, results} = Cards.search_query("oracle:#{oracle_id}")
+      assert Enum.map(results, & &1.id) == [second_printing.id, first_printing.id]
     end
 
     test "search_query/1 supports negated type filters" do

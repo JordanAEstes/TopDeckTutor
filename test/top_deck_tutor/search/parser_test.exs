@@ -23,6 +23,13 @@ defmodule TopDeckTutor.Search.ParserTest do
     assert {:ok, [{:field_eq, :set_code, "mh3"}]} = Parser.parse(["set:MH3"])
   end
 
+  test "parses oracle id filters" do
+    oracle_id = "5eb8b497-ec9a-4a89-ad29-1ec3ca82da7c"
+
+    assert {:ok, [{:field_eq, :oracle_id, ^oracle_id}]} =
+             Parser.parse(["oracle:#{oracle_id}"])
+  end
+
   test "parses game filters" do
     assert {:ok, [{:game, "paper"}]} = Parser.parse(["game:paper"])
     assert {:ok, [{:game, "arena"}]} = Parser.parse(["game:Arena"])
