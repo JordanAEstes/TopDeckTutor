@@ -38,6 +38,9 @@ defmodule TopDeckTutor.Search.Parser do
       String.starts_with?(token, "set:") ->
         parse_exact_field(token, "set:", :set_code)
 
+      String.starts_with?(token, "oracle:") ->
+        parse_exact_field(token, "oracle:", :oracle_id)
+
       String.starts_with?(token, "game:") ->
         parse_normalized_node(token, "game:", :game)
 

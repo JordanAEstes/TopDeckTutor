@@ -60,6 +60,38 @@ defmodule TopDeckTutorWeb.SearchLiveTest do
     assert_patch(view, ~p"/search?#{[q: "ward", game: "arena"]}")
   end
 
+  test "oracle id searches can show all printings in image view", %{conn: conn} do
+    oracle_id = Ecto.UUID.generate()
+
+    first_printing =
+      card_fixture(%{
+        oracle_id: oracle_id,
+        name: "Lightning Bolt",
+        normalized_name: "lightning bolt",
+        set_code: "lea",
+        collector_number: "161",
+        image_uris: %{"normal" => "https://example.com/lea.jpg"}
+      })
+
+    second_printing =
+      card_fixture(%{
+        oracle_id: oracle_id,
+        name: "Lightning Bolt",
+        normalized_name: "lightning bolt",
+        set_code: "m11",
+        collector_number: "146",
+        image_uris: %{"normal" => "https://example.com/m11.jpg"}
+      })
+
+    _different_card = card_fixture(%{name: "Shock", normalized_name: "shock"})
+
+    {:ok, view, _html} = live(conn, ~p"/search?#{[q: "oracle:#{oracle_id}", view: "images"]}")
+
+    assert has_element?(view, "#search-result-#{first_printing.id} img")
+    assert has_element?(view, "#search-result-#{second_printing.id} img")
+    assert has_element?(view, "[phx-value-mode='images'].bg-\\[var\\(--brand\\)\\]")
+  end
+
   describe "selected deck scope" do
     setup :register_and_log_in_user
 
